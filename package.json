@@ -9,14 +9,15 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260713.1",
+    "@cloudflare/workers-types": "^5.20260721.1",
     "typescript": "^7.0.2",
     "wrangler": "^4.110.0"
   },
   "dependencies": {
     "@grammyjs/conversations": "^2.1.1",
-    "grammy": "^1.44.0"
+    "grammy": "^1.44.0",
+    "hono": "^4.12.31"
   }
 }

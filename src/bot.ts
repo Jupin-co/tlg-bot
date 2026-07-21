@@ -5,6 +5,8 @@ import {
   Conversation,
   ConversationFlavor,
 } from '@grammyjs/conversations';
+import { saveUser, createOrder, updateOrderStatus, getAdminIds } from './core/db';
+import { setupAdmin } from './bot/admin';
 
 // --- Environment & Context ---
 export interface Env {
@@ -14,11 +16,11 @@ export interface Env {
 }
 
 interface SessionData {
-  adminDeliveryOrderId?: string;
-  adminDeliveryUserId?: string;
+  adminDeliveryOrderId?: number;
+  adminDeliveryUserId?: number;
 }
 
-export type BotContext = Context & SessionFlavor<SessionData> & ConversationFlavor & {
+export type BotContext = Context & SessionFlavor<SessionData> & ConversationFlavor<Context> & {
   env: Env;
 };
 export type BotConversation = Conversation<BotContext>;
@@ -45,12 +47,8 @@ class D1Adapter {
 // --- Conversations ---
 
 async function orderWizard(conversation: BotConversation, ctx: BotContext) {
-  // 1. Ensure user exists
   const tgId = ctx.from?.id;
-  const username = ctx.from?.username || "unknown";
   if (!tgId) return;
-
-  await ctx.env.DB.prepare("INSERT OR IGNORE INTO users (telegram_id, username) VALUES (?, ?)").bind(tgId, username).run();
 
   // 2. Ask Days
   await ctx.reply("Welcome! Let's configure your order.\n\nHow many **Days** of service do you need? (Please enter a number)");
@@ -79,35 +77,41 @@ async function orderWizard(conversation: BotConversation, ctx: BotContext) {
   const photo = photoCtx.msg.photo;
   
   // 6. Save Order
-  const res = await ctx.env.DB.prepare("INSERT INTO orders (user_id, days, gb, price, status) VALUES (?, ?, ?, ?, ?) RETURNING id")
-    .bind(tgId, days, gb, price, "PENDING_PAYMENT")
-    .first();
-  
-  const orderId = res?.id;
+  const orderId = await createOrder(ctx.env.DB, tgId, days, gb, price);
 
   await ctx.reply("Thank you! Your payment receipt has been submitted. The admin will review it shortly.");
 
-  // 7. Send to Admin
-  const adminId = ctx.env.ADMIN_CHAT_ID;
+  // 7. Send to Admins
+  const username = ctx.from?.username || "unknown";
   const adminMsg = `📦 **New Order #${orderId}**\nUser: @${username} (${tgId})\nDays: ${days}\nGB: ${gb}\nPrice: $${price}\nStatus: PENDING PAYMENT`;
   
-  await ctx.api.sendPhoto(adminId, photo[0].file_id, {
-    caption: adminMsg,
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "✅ Approve", callback_data: `approve_${orderId}_${tgId}` },
-          { text: "❌ Reject", callback_data: `reject_${orderId}_${tgId}` }
+  // Use getAdminIds to notify all admins
+  const adminIds = await getAdminIds(ctx.env.DB);
+  if (adminIds.length === 0) {
+    // fallback if no admin in db
+    adminIds.push(parseInt(ctx.env.ADMIN_CHAT_ID));
+  }
+
+  for (const adminId of adminIds) {
+    await ctx.api.sendPhoto(adminId, photo[0].file_id, {
+      caption: adminMsg,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "✅ Approve", callback_data: `approve_${orderId}_${tgId}` },
+            { text: "❌ Reject", callback_data: `reject_${orderId}_${tgId}` }
+          ]
         ]
-      ]
-    }
-  });
+      }
+    }).catch(console.error); // handle blocks
+  }
 }
 
 async function adminDeliveryWizard(conversation: BotConversation, ctx: BotContext) {
-  // We expect conversation state to hold the orderId and userId
   const orderId = conversation.session.adminDeliveryOrderId;
   const userId = conversation.session.adminDeliveryUserId;
+
+  if (!orderId || !userId) return;
 
   await ctx.reply(`Please enter the product details (e.g., link, credentials) for Order #${orderId} to deliver to the user:`);
   
@@ -115,7 +119,7 @@ async function adminDeliveryWizard(conversation: BotConversation, ctx: BotContex
   const details = detailsCtx.msg.text;
 
   // Update DB
-  await ctx.env.DB.prepare("UPDATE orders SET status = 'DELIVERED' WHERE id = ?").bind(orderId).run();
+  await updateOrderStatus(ctx.env.DB, orderId, 'DELIVERED');
 
   // Send to User
   await ctx.api.sendMessage(userId, `🎉 Your Order #${orderId} has been approved and delivered!\n\nHere are your details:\n${details}`);
@@ -148,27 +152,40 @@ export function initBot(env: Env) {
   bot.use(createConversation(orderWizard));
   bot.use(createConversation(adminDeliveryWizard));
 
+  setupAdmin(bot);
+
   // User command
   bot.command("start", async (ctx) => {
+    // Capture rich user data
+    const profile = {
+      telegram_id: ctx.from?.id!,
+      username: ctx.from?.username,
+      first_name: ctx.from?.first_name,
+      last_name: ctx.from?.last_name,
+      language_code: ctx.from?.language_code,
+      is_premium: ctx.from?.is_premium,
+      start_param: ctx.match, // from /start <payload>
+    };
+    await saveUser(ctx.env.DB, profile);
+    
     await ctx.conversation.enter("orderWizard");
   });
 
   // Admin callbacks
   bot.callbackQuery(/reject_(\d+)_(\d+)/, async (ctx) => {
-    const orderId = ctx.match[1];
-    const userId = ctx.match[2];
+    const orderId = parseInt(ctx.match[1]);
+    const userId = parseInt(ctx.match[2]);
     
-    await ctx.env.DB.prepare("UPDATE orders SET status = 'REJECTED' WHERE id = ?").bind(orderId).run();
+    await updateOrderStatus(ctx.env.DB, orderId, 'REJECTED');
     await ctx.api.sendMessage(userId, `❌ Your payment for Order #${orderId} was rejected. Please contact support if you think this is a mistake.`);
     await ctx.editMessageCaption({ caption: ctx.msg?.caption + "\n\n❌ REJECTED" });
     await ctx.answerCallbackQuery("Rejected.");
   });
 
   bot.callbackQuery(/approve_(\d+)_(\d+)/, async (ctx) => {
-    const orderId = ctx.match[1];
-    const userId = ctx.match[2];
+    const orderId = parseInt(ctx.match[1]);
+    const userId = parseInt(ctx.match[2]);
     
-    // We start the admin delivery wizard. We need to pass the orderId and userId into the session so the conversation can read them.
     ctx.session.adminDeliveryOrderId = orderId;
     ctx.session.adminDeliveryUserId = userId;
     
