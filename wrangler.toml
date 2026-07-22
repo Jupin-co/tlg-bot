@@ -4,8 +4,8 @@ compatibility_date = "2024-03-20"
 
 [vars]
 # Telegram Bot Token (mock for now, replace in production)
-BOT_TOKEN = "MOCK_TOKEN"
-ADMIN_CHAT_ID = "123456789"
+BOT_TOKEN = "8818123904:AAG2pNcsMrcROzjAUcXgQQsw6xY7d0oXQ6w"
+ADMIN_CHAT_ID = "6147744511"
 
 [[d1_databases]]
 binding = "DB"
