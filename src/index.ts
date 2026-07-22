@@ -6,9 +6,15 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.route('/api', api);
 
+let isBotInitialized = false;
+
 app.post('/bot', async (c) => {
   const bot = initBot(c.env);
   try {
+    if (!isBotInitialized) {
+      await bot.init();
+      isBotInitialized = true;
+    }
     const update = await c.req.json();
     c.executionCtx.waitUntil(bot.handleUpdate(update));
     return c.text('OK');
