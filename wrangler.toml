@@ -1,0 +1,13 @@
+name = "serverless-ecommerce-bot"
+main = "src/index.ts"
+compatibility_date = "2024-03-20"
+
+[vars]
+# Telegram Bot Token (mock for now, replace in production)
+BOT_TOKEN = "MOCK_TOKEN"
+ADMIN_CHAT_ID = "123456789"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ecommerce_bot_db"
+database_id = "mock-id-for-local-dev" # Replace with real ID when deploying to Cloudflare
