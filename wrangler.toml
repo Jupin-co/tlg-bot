@@ -9,5 +9,5 @@ ADMIN_CHAT_ID = "123456789"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "ecommerce_bot_db"
+database_name = "ecommerce-bot-db"
 database_id = "832453d2-a833-4c88-b9ac-f83bcabe1dd0" # Replace with real ID when deploying to Cloudflare
