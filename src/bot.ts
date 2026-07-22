@@ -185,6 +185,27 @@ export function initBot(env: Env) {
     };
     await saveUser(ctx.env.DB, profile);
     
+    // Determine the web app URL from the current request or hardcode it
+    // For now we will use the worker's URL that hosts the HTML.
+    // In production, you might want to use a specific domain.
+    const webAppUrl = "https://tlg-bot.m-pazouki-dev.workers.dev/";
+
+    await ctx.reply("Welcome to the E-Commerce Bot! You can use our Mini App to browse the catalog, or use the text wizard to create an order.", {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🛍️ Open Catalog (Mini App)", web_app: { url: webAppUrl } }
+          ],
+          [
+            { text: "📝 Quick Order (Text Wizard)", callback_data: "start_wizard" }
+          ]
+        ]
+      }
+    });
+  });
+
+  bot.callbackQuery("start_wizard", async (ctx) => {
+    await ctx.answerCallbackQuery();
     await ctx.conversation.enter("orderWizard");
   });
 
