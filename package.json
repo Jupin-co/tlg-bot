@@ -22,5 +22,10 @@
     "@grammyjs/conversations": "^2.1.1",
     "grammy": "^1.44.0",
     "hono": "^4.12.31"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "sharp": true,
+    "workerd": true
   }
 }
