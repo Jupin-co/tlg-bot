@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loadTranslations } from '../i18n';
-import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Check, Search, Eye, Key } from 'lucide-react';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -333,18 +333,6 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     return <div><h1 style={{color: 'red'}}>Access Denied</h1></div>;
   }
 
-  // Helper function for styling tabs
-  const tabStyle = (tabId: string) => ({
-    padding: '8px 16px',
-    borderRadius: '20px',
-    background: activeTab === tabId ? 'var(--tg-theme-button-color)' : 'var(--tg-theme-secondary-bg-color)',
-    color: activeTab === tabId ? 'var(--tg-theme-button-text-color)' : 'var(--tg-theme-text-color)',
-    cursor: 'pointer',
-    border: 'none',
-    whiteSpace: 'nowrap' as const,
-    fontSize: '14px',
-    fontWeight: 'bold'
-  });
 
   return (
     <div className="container dir-auto relative">
