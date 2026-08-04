@@ -7,6 +7,7 @@ export default function Landing({ initData }: { initData: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [products, setProducts] = useState<any[]>([]);
+  const [basketItems, setBasketItems] = useState<any[]>([]);
   const [basketCount, setBasketCount] = useState(0);
 
   const fetchBasketCount = () => {
@@ -14,6 +15,7 @@ export default function Landing({ initData }: { initData: string }) {
       .then(r => r.json())
       .then(data => {
         if (data.basket) {
+          setBasketItems(data.basket);
           const count = data.basket.reduce((acc: number, item: any) => acc + item.quantity, 0);
           setBasketCount(count);
         }
@@ -45,6 +47,18 @@ export default function Landing({ initData }: { initData: string }) {
 
     fetchBasketCount();
   }, [initData]);
+
+  
+  const handleDecrement = async (basketId: number) => {
+    try {
+      const res = await fetch('/api/basket/decrement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+        body: JSON.stringify({ basket_id: basketId })
+      });
+      if (res.ok) fetchBasketCount();
+    } catch { console.error('error'); }
+  };
 
   const addToBasket = async (productId: number) => {
     try {
@@ -96,7 +110,7 @@ export default function Landing({ initData }: { initData: string }) {
               <div className="flex justify-between items-start mb-2">
                 <h3 className="text-lg font-bold" style={{ margin: 0 }}>{p.name}</h3>
                 <span className="font-bold text-lg num-fix" style={{ color: 'var(--link-color)' }}>
-                  {p.base_price.toLocaleString()} {p.currency}
+                  {p.base_price.toLocaleString()} {t(p.currency.toLowerCase(), p.currency)}
                 </span>
               </div>
               
@@ -115,9 +129,24 @@ export default function Landing({ initData }: { initData: string }) {
                     {t('lbl_out_of_stock', 'Out of Stock')}
                   </span>
                 ) : (
-                  <button onClick={() => addToBasket(p.id)} style={{ borderRadius: 'var(--radius-full)' }}>
-                    <Plus size={18} /> {t('btn_add_to_basket', 'Add to Basket')}
-                  </button>
+                  (() => {
+                    const inBasket = basketItems.find(i => i.product_id === p.id);
+                    if (inBasket) {
+                      return (
+                        <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-full p-1 border border-[var(--border-color)]">
+                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => handleDecrement(inBasket.basket_id)}>-</button>
+                          <span className="font-bold num-fix min-w-[20px] text-center">{inBasket.quantity}</span>
+                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id)}>+</button>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <button onClick={() => addToBasket(p.id)} style={{ borderRadius: 'var(--radius-full)' }}>
+                          <Plus size={18} /> {t('btn_add_to_basket', 'Add to Basket')}
+                        </button>
+                      );
+                    }
+                  })()
                 )}
               </div>
             </div>

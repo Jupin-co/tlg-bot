@@ -105,21 +105,21 @@ export default function Profile({ initData, userProfile, error }: { initData: st
     <div className="container dir-auto">
       <h1 className="text-xl font-bold mb-4">{t('profile')}</h1>
 
-      <div className="flex flex-wrap gap-1 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6">
+      <div className="flex gap-2 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6 overflow-x-auto hide-scrollbar" style={{ flexWrap: "nowrap" }}>
         <button 
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'profile' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'profile' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('profile')}
         >
           <div className="flex items-center justify-center gap-2"><Settings size={16} />{t('tab_settings', 'Settings')}</div>
         </button>
         <button 
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'inventory' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'inventory' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('inventory')}
         >
           <div className="flex items-center justify-center gap-2"><Wallet size={16} />{t('tab_wallet', 'Wallet')}</div>
         </button>
         <button 
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('payments')}
         >
           <div className="flex items-center justify-center gap-2"><CreditCard size={16} />{t('tab_payments', 'Payments')}</div>

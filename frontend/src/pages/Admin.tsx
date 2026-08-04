@@ -5,10 +5,11 @@ import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X,
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'catalog' | 'settings' | 'payments' | 'messages' | 'users'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'settings' | 'payments' | 'invoices' | 'messages' | 'users'>('catalog');
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   
   // User Logs State
@@ -81,6 +82,16 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       .catch(() => showToast("Failed to fetch settings", "error"));
   };
 
+  
+  const fetchInvoices = () => {
+    fetch('/api/admin/invoices', { headers: { 'x-telegram-init-data': initData } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.invoices) setInvoices(data.invoices);
+      })
+      .catch(() => showToast("Failed to fetch invoices", "error"));
+  };
+
   const fetchPayments = () => {
     fetch('/api/admin/payments', { headers: { 'x-telegram-init-data': initData } })
       .then(r => r.json())
@@ -114,6 +125,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     if (activeTab === 'catalog') fetchCatalog();
     if (activeTab === 'settings') fetchSettings();
     if (activeTab === 'payments') fetchPayments();
+    if (activeTab === 'invoices') fetchInvoices();
     if (activeTab === 'messages') fetchTranslations();
     if (activeTab === 'users') fetchUsers();
   }, [initData, isAdmin, activeTab]);
@@ -481,7 +493,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             
             <div className="flex gap-2 my-3">
               <input className="flex-1" placeholder="Enter code" value={newCode} onChange={e => setNewCode(e.target.value)} />
-              <button onClick={addCode}>Add</button>
+              <button onClick={addCode}>{t("add", "Add")}</button>
             </div>
 
             <div className="flex-1 overflow-y-auto mt-2">
@@ -524,6 +536,38 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             <input placeholder="Card Number" value={cardNumber} onChange={e => setCardNumber(e.target.value)} className="num-fix tracking-widest" />
             <button className="mt-2" onClick={saveSettings}>{t('save')}</button>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'invoices' && (
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-bold mb-2">{t('tab_invoices', 'Invoices')}</h2>
+          {invoices.length === 0 ? (
+            <p className="text-hint">No invoices found.</p>
+          ) : (
+            invoices.map(inv => (
+              <div key={inv.id} className="card">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold m-0">{t('invoice_hash', 'Invoice #')}{inv.id}</h3>
+                    <p className="text-sm text-hint mt-1">
+                      {inv.first_name} {inv.username ? `(@${inv.username})` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-xs font-bold px-2 py-1 rounded ${
+                      inv.status === 'APPROVED' ? 'bg-[rgba(52,199,89,0.1)] text-success' :
+                      inv.status === 'REJECTED' || inv.status === 'EXPIRED' ? 'bg-[rgba(255,59,48,0.1)] text-danger' :
+                      'bg-[rgba(255,149,0,0.1)] text-[var(--hint-color)]'
+                    }`}>
+                      {inv.status}
+                    </span>
+                    <p className="font-bold mt-2 num-fix">{inv.total_price.toLocaleString()} {t(inv.currency.toLowerCase(), inv.currency)}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 

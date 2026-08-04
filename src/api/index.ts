@@ -199,6 +199,17 @@ api.post('/admin/settings', adminMiddleware, async (c) => {
 });
 
 // --- ADMIN PAYMENTS ---
+
+api.get('/admin/invoices', adminMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare(`
+    SELECT i.*, u.username, u.first_name 
+    FROM invoices i
+    JOIN users u ON i.user_id = u.telegram_id
+    ORDER BY i.created_at DESC
+  `).all();
+  return c.json({ invoices: results });
+});
+
 api.get('/admin/payments', adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT p.*, i.user_id, i.total_price, i.currency, u.username, u.first_name 
