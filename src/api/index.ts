@@ -243,7 +243,7 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
     if (item.snapshot_duration_days > 0) {
       // Need a redeem code
       for (let q = 0; q < item.quantity; q++) {
-        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND is_sold = 2 LIMIT 1").bind(item.product_id).first();
+        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id).first();
         if (!code) {
           return c.json({ error: `Not enough redeem codes available for ${item.snapshot_name}.` }, 400);
         }

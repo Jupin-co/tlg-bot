@@ -357,36 +357,42 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       <h1 className="text-xl font-bold mb-4">{t('admin')}</h1>
       
       {/* Scrollable / Wrap Tab Navigation */}
-      <div className="flex flex-wrap gap-1 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6">
+      <div className="flex gap-2 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6 overflow-x-auto hide-scrollbar" style={{ flexWrap: "nowrap" }}>
         <button 
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'catalog' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'catalog' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('catalog')}
         >
-          <div className="flex items-center justify-center gap-2"><ShoppingBag size={16} />Catalog</div>
+          <div className="flex items-center justify-center gap-2"><ShoppingBag size={16} />{t('tab_catalog', 'Catalog')}</div>
         </button>
         <button 
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'settings' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'settings' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('settings')}
         >
-          <div className="flex items-center justify-center gap-2"><Settings size={16} />Settings</div>
+          <div className="flex items-center justify-center gap-2"><Settings size={16} />{t('tab_settings', 'Settings')}</div>
         </button>
         <button 
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('payments')}
         >
-          <div className="flex items-center justify-center gap-2"><CreditCard size={16} />Payments</div>
+          <div className="flex items-center justify-center gap-2"><CreditCard size={16} />{t('tab_payments', 'Payments')}</div>
         </button>
         <button 
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'messages' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
-          onClick={() => setActiveTab('messages')}
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'invoices' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          onClick={() => setActiveTab('invoices')}
         >
-          <div className="flex items-center justify-center gap-2"><MessageSquare size={16} />Messages</div>
+          <div className="flex items-center justify-center gap-2"><CreditCard size={16} />{t('tab_invoices', 'Invoices')}</div>
         </button>
         <button 
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'users' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'users' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('users')}
         >
-          <div className="flex items-center justify-center gap-2"><Users size={16} />Users</div>
+          <div className="flex items-center justify-center gap-2"><Users size={16} />{t('tab_users', 'Users')}</div>
+        </button>
+        <button 
+          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'messages' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          onClick={() => setActiveTab('messages')}
+        >
+          <div className="flex items-center justify-center gap-2"><MessageSquare size={16} />{t('tab_messages', 'Messages')}</div>
         </button>
       </div>
 
