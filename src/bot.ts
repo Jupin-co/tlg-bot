@@ -99,6 +99,14 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
       const btn = await getBotMessage(ctx.env.DB, 'bot_btn_open_app', lang, "📱 Open App");
       await ctx.reply(msg, {
         reply_markup: {
+          inline_keyboard: [
+            [{ text: btn, web_app: { url: webAppUrl } }]
+          ]
+        }
+      });
+      // Also send the reply keyboard for convenience
+      await ctx.reply("Or use the menu button below:", {
+        reply_markup: {
           keyboard: [
             [{ text: btn, web_app: { url: webAppUrl } }]
           ],
@@ -127,6 +135,13 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
         
         await ctx.reply(msg, {
           reply_markup: {
+            inline_keyboard: [
+              [{ text: btn, web_app: { url: webAppUrl } }]
+            ]
+          }
+        });
+        await ctx.reply("Or use the menu button below:", {
+          reply_markup: {
             keyboard: [
               [{ text: btn, web_app: { url: webAppUrl } }]
             ],
@@ -151,6 +166,13 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
       const webAppUrl = "https://tlg-bot.m-pazouki-dev.workers.dev/";
       
       await ctx.reply(msg, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: btn, web_app: { url: webAppUrl } }]
+          ]
+        }
+      });
+      await ctx.reply("Or use the menu button below:", {
         reply_markup: {
           keyboard: [
             [{ text: btn, web_app: { url: webAppUrl } }]

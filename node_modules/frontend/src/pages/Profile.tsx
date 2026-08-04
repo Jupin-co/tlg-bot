@@ -68,8 +68,14 @@ export default function Profile({ initData, userProfile }: { initData: string, u
     return `${d} days ${h} hours`;
   };
 
-  if (!initData) return <div style={{ padding: 20 }}>{t('msg_open_in_telegram', 'Please open this app from inside Telegram.')}</div>;
-  if (!userProfile) return <div style={{ padding: 20 }}>Loading...</div>;
+  if (!initData) {
+    const tgStr = typeof window !== 'undefined' ? JSON.stringify((window as any).Telegram?.WebApp?.initDataUnsafe || {}) : 'no window';
+    return <div style={{ padding: 20 }}>
+      <p>{t('msg_open_in_telegram', 'Please open this app from inside Telegram.')}</p>
+      <p style={{fontSize: 10, color: 'gray'}}>Debug: tg.initData is empty. tg.initDataUnsafe: {tgStr}</p>
+    </div>;
+  }
+  if (!userProfile) return <div style={{ padding: 20 }}>Loading profile...</div>;
 
   return (
     <div style={{ paddingBottom: 60 }}>
