@@ -69,10 +69,14 @@ export default function Profile({ initData, userProfile, error }: { initData: st
   };
 
   if (!initData) {
-    const tgStr = typeof window !== 'undefined' ? JSON.stringify((window as any).Telegram?.WebApp?.initDataUnsafe || {}) : 'no window';
+    const tgStr = JSON.stringify((window as any).Telegram?.WebApp?.initDataUnsafe || {});
+    const loc = typeof window !== 'undefined' ? window.location.href : 'unknown';
+    const hash = typeof window !== 'undefined' ? window.location.hash : 'unknown';
     return <div style={{ padding: 20 }}>
-      <p>{t('msg_open_in_telegram', 'Please open this app from inside Telegram.')}</p>
+      <h3>Please open this app from inside Telegram.</h3>
       <p style={{fontSize: 10, color: 'gray'}}>Debug: tg.initData is empty. tg.initDataUnsafe: {tgStr}</p>
+      <p style={{fontSize: 10, color: 'gray'}}>URL: {loc}</p>
+      <p style={{fontSize: 10, color: 'gray'}}>Hash: {hash}</p>
     </div>;
   }
   if (error) {
