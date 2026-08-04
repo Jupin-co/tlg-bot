@@ -31,18 +31,15 @@ export async function saveUser(db: D1Database, profile: UserProfile) {
   ).run();
 }
 
-export async function createOrder(db: D1Database, user_id: number, days: number, gb: number, price: number) {
-  const res = await db.prepare(
-    "INSERT INTO orders (user_id, days, gb, price, status) VALUES (?, ?, ?, ?, ?) RETURNING id"
-  ).bind(user_id, days, gb, price, "PENDING_PAYMENT").first();
-  return res?.id as number;
+export async function updateUserPhone(db: D1Database, telegram_id: number, phone_number: string) {
+  await db.prepare(`UPDATE users SET phone_number = ? WHERE telegram_id = ?`).bind(phone_number, telegram_id).run();
 }
 
-export async function updateOrderStatus(db: D1Database, orderId: number, status: string) {
-  await db.prepare("UPDATE orders SET status = ? WHERE id = ?").bind(status, orderId).run();
+export async function logUsage(db: D1Database, user_id: number, action: string, metadata: any = {}) {
+  await db.prepare(`INSERT INTO user_usage_logs (user_id, action, metadata) VALUES (?, ?, ?)`).bind(user_id, action, JSON.stringify(metadata)).run();
 }
 
 export async function getAdminIds(db: D1Database): Promise<number[]> {
-  const { results } = await db.prepare("SELECT telegram_id FROM users WHERE is_admin = 1").all();
+  const { results } = await db.prepare("SELECT telegram_id FROM users WHERE role IN ('ADMIN', 'SUPER_ADMIN')").all();
   return results.map((r: any) => r.telegram_id as number);
 }

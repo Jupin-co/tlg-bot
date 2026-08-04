@@ -15,8 +15,20 @@ CREATE TABLE users (
     language_code TEXT,
     is_premium BOOLEAN DEFAULT 0,
     start_param TEXT,
-    is_admin BOOLEAN DEFAULT 0,
+    role TEXT DEFAULT 'USER',
+    phone_number TEXT,
+    theme_preference TEXT,
+    language_preference TEXT DEFAULT 'fa',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_usage_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    metadata TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(telegram_id)
 );
 
 CREATE TABLE categories (
