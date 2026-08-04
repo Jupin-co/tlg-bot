@@ -29,10 +29,17 @@ export async function saveUser(db: D1Database, profile: UserProfile) {
     is_premium ? 1 : 0, 
     start_param || null
   ).run();
+
+  // Ensure a profile exists for this user
+  await db.prepare(`
+    INSERT INTO profiles (user_id, role_id, theme_id, language_id)
+    VALUES (?, 1, 1, 2)
+    ON CONFLICT(user_id) DO NOTHING
+  `).bind(telegram_id).run();
 }
 
 export async function updateUserPhone(db: D1Database, telegram_id: number, phone_number: string) {
-  await db.prepare(`UPDATE users SET phone_number = ? WHERE telegram_id = ?`).bind(phone_number, telegram_id).run();
+  await db.prepare(`UPDATE profiles SET phone_number = ? WHERE user_id = ?`).bind(phone_number, telegram_id).run();
 }
 
 export async function logUsage(db: D1Database, user_id: number, action: string, metadata: any = {}) {
@@ -40,6 +47,11 @@ export async function logUsage(db: D1Database, user_id: number, action: string, 
 }
 
 export async function getAdminIds(db: D1Database): Promise<number[]> {
-  const { results } = await db.prepare("SELECT telegram_id FROM users WHERE role IN ('ADMIN', 'SUPER_ADMIN')").all();
+  const { results } = await db.prepare(`
+    SELECT p.user_id as telegram_id 
+    FROM profiles p 
+    JOIN roles r ON p.role_id = r.id 
+    WHERE r.name IN ('ADMIN', 'SUPER_ADMIN')
+  `).all();
   return results.map((r: any) => r.telegram_id as number);
 }

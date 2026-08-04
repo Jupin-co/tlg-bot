@@ -1,10 +1,15 @@
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS user_usage_logs;
 DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS profiles;
 DROP TABLE IF EXISTS sessions;
-DROP TABLE IF EXISTS categories;
-DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS product_variants;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS settings;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS themes;
+DROP TABLE IF EXISTS languages;
 
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -15,11 +20,38 @@ CREATE TABLE users (
     language_code TEXT,
     is_premium BOOLEAN DEFAULT 0,
     start_param TEXT,
-    role TEXT DEFAULT 'USER',
-    phone_number TEXT,
-    theme_preference TEXT,
-    language_preference TEXT DEFAULT 'fa',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE roles (
+    id INTEGER PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
+);
+INSERT INTO roles (id, name) VALUES (1, 'USER'), (2, 'ADMIN'), (3, 'SUPER_ADMIN');
+
+CREATE TABLE themes (
+    id INTEGER PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
+);
+INSERT INTO themes (id, name) VALUES (1, 'light'), (2, 'dark');
+
+CREATE TABLE languages (
+    id INTEGER PRIMARY KEY,
+    code TEXT UNIQUE NOT NULL
+);
+INSERT INTO languages (id, code) VALUES (1, 'en'), (2, 'fa');
+
+CREATE TABLE profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE NOT NULL,
+    phone_number TEXT,
+    role_id INTEGER DEFAULT 1,
+    theme_id INTEGER DEFAULT 1,
+    language_id INTEGER DEFAULT 2,
+    FOREIGN KEY(user_id) REFERENCES users(telegram_id),
+    FOREIGN KEY(role_id) REFERENCES roles(id),
+    FOREIGN KEY(theme_id) REFERENCES themes(id),
+    FOREIGN KEY(language_id) REFERENCES languages(id)
 );
 
 CREATE TABLE user_usage_logs (

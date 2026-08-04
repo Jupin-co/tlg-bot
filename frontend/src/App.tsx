@@ -6,10 +6,12 @@ import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import { User, Store, Settings } from 'lucide-react';
 
-function Navigation() {
+function Navigation({ userProfile }: { userProfile: any }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const isAdmin = userProfile?.role === 'ADMIN' || userProfile?.role === 'SUPER_ADMIN';
 
   return (
     <div className="nav-bar">
@@ -27,14 +29,15 @@ function Navigation() {
         <User size={24} />
         <span>{t('profile')}</span>
       </div>
-      {/* Optionally only show Admin if user is admin, but we can rely on route protection too */}
-      <div 
-        className={`nav-item ${location.pathname === '/admin' ? 'active' : ''}`}
-        onClick={() => navigate('/admin')}
-      >
-        <Settings size={24} />
-        <span>{t('admin')}</span>
-      </div>
+      {isAdmin && (
+        <div 
+          className={`nav-item ${location.pathname === '/admin' ? 'active' : ''}`}
+          onClick={() => navigate('/admin')}
+        >
+          <Settings size={24} />
+          <span>{t('admin')}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -88,7 +91,7 @@ function App() {
           <Route path="/admin" element={<Admin initData={initData} userProfile={userProfile} />} />
         </Routes>
       </div>
-      <Navigation />
+      <Navigation userProfile={userProfile} />
     </BrowserRouter>
   );
 }

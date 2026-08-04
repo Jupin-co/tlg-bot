@@ -74,20 +74,28 @@ export function initBot(env: Env) {
       }
     });
 
-    // If we want a separate keyboard for contact sharing (optional prompt if not shared)
-    // Actually, Telegram allows ReplyKeyboardMarkup. Let's send a silent message with it, or maybe just tell them to share if needed.
-    // For now, we just give them the option. We can send a secondary message with a reply keyboard, 
-    // or just assume the user uses the mini app, and if the mini app needs contact, it tells the user to send it.
-    // Let's provide a permanent reply keyboard with a "Share Contact" button.
-    await ctx.reply("You can optionally share your contact with us to complete your profile.", {
-      reply_markup: {
-        keyboard: [
-          [{ text: "📞 Share Phone Number", request_contact: true }]
-        ],
-        resize_keyboard: true,
-        is_persistent: true
-      }
-    });
+    // Check if user already has a phone number in profile
+    const existingProfile = await ctx.env.DB.prepare("SELECT phone_number FROM profiles WHERE user_id = ?").bind(profile.telegram_id).first();
+    const hasPhoneNumber = !!(existingProfile && existingProfile.phone_number);
+
+    if (!hasPhoneNumber) {
+      await ctx.reply("You can optionally share your contact with us to complete your profile.", {
+        reply_markup: {
+          keyboard: [
+            [{ text: "📞 Share Phone Number", request_contact: true }]
+          ],
+          resize_keyboard: true,
+          is_persistent: true
+        }
+      });
+    } else {
+      // Remove any lingering persistent keyboard
+      await ctx.reply("Welcome back!", {
+        reply_markup: {
+          remove_keyboard: true
+        }
+      });
+    }
   });
 
   bot.on("message:contact", async (ctx) => {

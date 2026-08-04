@@ -32,7 +32,12 @@ const adminMiddleware = async (c: any, next: any) => {
   if (!user || !user.id) return c.json({ error: 'Unauthorized' }, 401);
   
   const { DB } = c.env;
-  const dbUser = await DB.prepare("SELECT role FROM users WHERE telegram_id = ?").bind(user.id).first();
+  const dbUser = await DB.prepare(`
+    SELECT r.name as role 
+    FROM profiles p 
+    JOIN roles r ON p.role_id = r.id 
+    WHERE p.user_id = ?
+  `).bind(user.id).first();
   
   if (!dbUser || (dbUser.role !== 'SUPER_ADMIN' && dbUser.role !== 'ADMIN')) {
     return c.json({ error: 'Forbidden. Admins only.' }, 403);
@@ -45,7 +50,21 @@ api.get('/user', async (c) => {
   const user = c.get('user');
   if (!user) return c.json({ error: 'No user data' }, 400);
 
-  const dbUser = await c.env.DB.prepare("SELECT * FROM users WHERE telegram_id = ?").bind(user.id).first();
+  const dbUser = await c.env.DB.prepare(`
+    SELECT 
+      u.*, 
+      p.phone_number,
+      r.name as role,
+      t.name as theme_preference,
+      l.code as language_preference
+    FROM users u
+    LEFT JOIN profiles p ON u.telegram_id = p.user_id
+    LEFT JOIN roles r ON p.role_id = r.id
+    LEFT JOIN themes t ON p.theme_id = t.id
+    LEFT JOIN languages l ON p.language_id = l.id
+    WHERE u.telegram_id = ?
+  `).bind(user.id).first();
+  
   return c.json({ user: dbUser || user });
 });
 
@@ -56,9 +75,13 @@ api.post('/user/preferences', async (c) => {
   
   const { language, theme } = await c.req.json();
   
-  await c.env.DB.prepare(
-    "UPDATE users SET language_preference = ?, theme_preference = ? WHERE telegram_id = ?"
-  ).bind(language, theme, user.id).run();
+  await c.env.DB.prepare(`
+    UPDATE profiles 
+    SET 
+      language_id = (SELECT id FROM languages WHERE code = ?), 
+      theme_id = (SELECT id FROM themes WHERE name = ?) 
+    WHERE user_id = ?
+  `).bind(language, theme, user.id).run();
   
   return c.json({ success: true });
 });
