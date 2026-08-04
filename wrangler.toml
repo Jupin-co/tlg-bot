@@ -4,6 +4,9 @@ compatibility_date = "2024-03-20"
 account_id = "40b65d5dcdf7ce1708a1460a7ae81ed5"
 assets = { directory = "frontend/dist" }
 
+[build]
+command = "npm --prefix frontend install && npm --prefix frontend run build"
+
 [vars]
 # Telegram Bot Token (mock for now, replace in production)
 BOT_TOKEN = "8818123904:AAG2pNcsMrcROzjAUcXgQQsw6xY7d0oXQ6w"
