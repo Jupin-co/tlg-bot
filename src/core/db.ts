@@ -29,13 +29,6 @@ export async function saveUser(db: D1Database, profile: UserProfile) {
     is_premium ? 1 : 0, 
     start_param || null
   ).run();
-
-  // Ensure a profile exists for this user
-  await db.prepare(`
-    INSERT INTO profiles (user_id, role_id, theme_id, language_id)
-    VALUES (?, 1, 1, 2)
-    ON CONFLICT(user_id) DO NOTHING
-  `).bind(telegram_id).run();
 }
 
 export async function updateUserPhone(db: D1Database, telegram_id: number, phone_number: string) {

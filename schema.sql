@@ -112,3 +112,11 @@ CREATE TABLE sessions (
     id TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+-- Automatically create a profile when a new user is inserted
+CREATE TRIGGER after_user_insert
+AFTER INSERT ON users
+BEGIN
+    INSERT INTO profiles (user_id, role_id, theme_id, language_id)
+    VALUES (NEW.telegram_id, 1, 1, 2);
+END;
