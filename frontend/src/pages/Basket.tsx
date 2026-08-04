@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, CreditCard, UploadCloud, ReceiptText, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, CreditCard, UploadCloud, ReceiptText, ShoppingCart } from 'lucide-react';
 
 const convertToWebp = (file: File): Promise<Blob> => {
   return new Promise((resolve, reject) => {
@@ -80,11 +80,20 @@ export default function Basket({ initData }: { initData: string }) {
     }
   }, [invoice]);
 
-  const handleRemove = async (basketId: number) => {
-    await fetch('/api/basket/remove', {
+  const handleDecrement = async (basketId: number) => {
+    await fetch('/api/basket/decrement', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
       body: JSON.stringify({ basket_id: basketId })
+    });
+    fetchBasket();
+  };
+
+  const handleAdd = async (productId: number) => {
+    await fetch('/api/basket/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+      body: JSON.stringify({ product_id: productId })
     });
     fetchBasket();
   };
@@ -255,19 +264,15 @@ export default function Basket({ initData }: { initData: string }) {
             <div key={item.basket_id} className="card flex justify-between items-center py-4" style={{ marginBottom: 0 }}>
               <div className="flex-1">
                 <h4 className="font-bold text-lg mb-1" style={{ margin: 0 }}>{item.name}</h4>
-                <div className="flex gap-2 text-hint font-medium">
+                <div className="text-hint font-medium">
                   <span className="num-fix">{item.base_price.toLocaleString()} {item.currency}</span>
-                  <span>×</span>
-                  <span className="num-fix text-text-color font-bold">{item.quantity}</span>
                 </div>
               </div>
-              <button 
-                className="danger" 
-                style={{ padding: '10px', borderRadius: '12px' }} 
-                onClick={() => handleRemove(item.basket_id)}
-              >
-                <Trash2 size={20} />
-              </button>
+              <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-xl p-1 border border-[var(--border-color)]">
+                <button className="secondary p-2 rounded-lg border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => handleDecrement(item.basket_id)}>-</button>
+                <span className="font-bold num-fix min-w-[20px] text-center">{item.quantity}</span>
+                <button className="secondary p-2 rounded-lg border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => handleAdd(item.product_id)}>+</button>
+              </div>
             </div>
           ))}
           

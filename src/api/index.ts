@@ -232,12 +232,12 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
     if (item.snapshot_duration_days > 0) {
       // Need a redeem code
       for (let q = 0; q < item.quantity; q++) {
-        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND is_sold = 0 LIMIT 1").bind(item.product_id).first();
+        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND is_sold = 2 LIMIT 1").bind(item.product_id).first();
         if (!code) {
           return c.json({ error: `Not enough redeem codes available for ${item.snapshot_name}.` }, 400);
         }
         // Temporarily mark as sold to avoid picking the same one in the loop if quantity > 1
-        await c.env.DB.prepare("UPDATE redeem_codes SET is_sold = 1 WHERE id = ?").bind(code.id).run();
+        await c.env.DB.prepare("UPDATE redeem_codes SET is_sold = 3 WHERE id = ?").bind(code.id).run();
         codeAssignments.push({ codeId: code.id, codeStr: code.code, item });
       }
     }
@@ -320,6 +320,22 @@ api.post('/basket/add', async (c) => {
     await c.env.DB.prepare("UPDATE baskets SET quantity = quantity + 1 WHERE id = ?").bind(exists.id).run();
   } else {
     await c.env.DB.prepare("INSERT INTO baskets (user_id, product_id) VALUES (?, ?)").bind(user.id, product_id).run();
+  }
+  return c.json({ success: true });
+});
+
+
+api.post('/basket/decrement', async (c) => {
+  const user = c.get('user');
+  if (!user) return c.json({ error: 'No user data' }, 400);
+  const { basket_id } = await c.req.json();
+  const exists = await c.env.DB.prepare("SELECT id, quantity FROM baskets WHERE id = ? AND user_id = ?").bind(basket_id, user.id).first();
+  if (exists) {
+    if (exists.quantity > 1) {
+      await c.env.DB.prepare("UPDATE baskets SET quantity = quantity - 1 WHERE id = ?").bind(basket_id).run();
+    } else {
+      await c.env.DB.prepare("DELETE FROM baskets WHERE id = ?").bind(basket_id).run();
+    }
   }
   return c.json({ success: true });
 });

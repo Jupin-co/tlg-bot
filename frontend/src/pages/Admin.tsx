@@ -345,7 +345,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       <h1 className="text-xl font-bold mb-4">{t('admin')}</h1>
       
       {/* Scrollable / Wrap Tab Navigation */}
-      <div className="flex bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6 overflow-x-auto whitespace-nowrap hide-scrollbar">
+      <div className="flex flex-wrap gap-1 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6">
         <button 
           className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'catalog' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('catalog')}
@@ -451,9 +451,15 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 <input type="number" placeholder={t('base_price')} value={newProdPrice} onChange={(e) => setNewProdPrice(e.target.value)} className="flex-1" />
                 <input placeholder="Currency (USD)" value={newProdCurrency} onChange={(e) => setNewProdCurrency(e.target.value)} className="flex-1" />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 items-center">
                 <input type="number" placeholder={t('placeholder_duration', 'Duration (Days, 0=Lifetime)')} value={newProdDuration} onChange={(e) => setNewProdDuration(e.target.value)} className="flex-1" />
-                <input type="number" placeholder={t('placeholder_stock', 'Stock (-1=Unlimited)')} value={newProdStock} onChange={(e) => setNewProdStock(e.target.value)} className="flex-1" />
+                {parseInt(newProdDuration || '0') > 0 ? (
+                  <div className="flex-1 text-xs text-hint bg-[var(--secondary-bg-color)] p-2 rounded-lg border border-[var(--border-color)]">
+                    Stock is automatically managed by added Codes.
+                  </div>
+                ) : (
+                  <input type="number" placeholder={t('placeholder_stock', 'Stock (-1=Unlimited)')} value={newProdStock} onChange={(e) => setNewProdStock(e.target.value)} className="flex-1" />
+                )}
               </div>
               <select value={newProdCat} onChange={(e) => setNewProdCat(e.target.value)} className="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]">
                 <option value="">No Category</option>
@@ -483,11 +489,20 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               <div className="flex flex-col gap-2">
                 {productCodes.map(c => (
                   <div key={c.id} className="flex justify-between items-center p-3 bg-[var(--secondary-bg-color)] rounded-lg">
-                    <div>
-                      <strong className="font-mono text-base tracking-wider num-fix">{c.code}</strong>
-                      <span className={`text-xs ml-3 font-bold ${c.is_sold ? 'text-danger' : 'text-success'}`}>
-                        {c.is_sold ? 'Sold' : 'Available'}
-                      </span>
+                    <div className="flex flex-col gap-1 w-full overflow-hidden">
+                      <div className="flex items-center gap-3">
+                        <strong className="font-mono text-base tracking-wider num-fix truncate">{c.code}</strong>
+                        <span className={`text-xs px-2 py-1 rounded font-bold whitespace-nowrap ${c.is_sold ? 'bg-[rgba(255,59,48,0.1)] text-danger' : 'bg-[rgba(52,199,89,0.1)] text-success'}`}>
+                          {c.is_sold ? 'Sold' : 'Available'}
+                        </span>
+                      </div>
+                      {c.is_sold && c.buyer_name && (
+                        <div className="text-xs text-hint flex gap-2 items-center">
+                          <span>Bought by: <strong>{c.buyer_name}</strong></span>
+                          <span>•</span>
+                          <span>Invoice #{c.invoice_id}</span>
+                        </div>
+                      )}
                     </div>
                     {!c.is_sold && (
                       <button onClick={() => deleteCode(c.id)} className="danger py-1 px-3 text-xs rounded-full">Delete</button>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, Wallet, CreditCard, Share2, Languages, Moon, Sun, Clock, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { User, Settings, Wallet, CreditCard, Share2, Languages, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check } from 'lucide-react';
 
 export default function Profile({ initData, userProfile, error }: { initData: string, userProfile: any, error?: string | null }) {
   const { t, i18n } = useTranslation();
@@ -9,6 +9,13 @@ export default function Profile({ initData, userProfile, error }: { initData: st
   const [activeTab, setActiveTab] = useState<'profile' | 'inventory' | 'payments'>('profile');
   const [inventory, setInventory] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [copiedCodeId, setCopiedCodeId] = useState<number | null>(null);
+
+  const copyToClipboard = (text: string, id: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCodeId(id);
+    setTimeout(() => setCopiedCodeId(null), 2000);
+  };
 
   useEffect(() => {
     if (!initData) return;
@@ -98,7 +105,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
     <div className="container dir-auto">
       <h1 className="text-xl font-bold mb-4">{t('profile')}</h1>
 
-      <div className="flex bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6">
+      <div className="flex flex-wrap gap-1 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6">
         <button 
           className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'profile' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('profile')}
@@ -205,9 +212,20 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                 <p className="text-sm text-hint mt-1 mb-4">{item.snapshot_description}</p>
                 
                 {item.redeem_code && (
-                  <div className="bg-[var(--secondary-bg-color)] p-3 rounded-lg border border-[var(--border-color)] mb-4 text-center">
-                    <span className="text-xs text-hint uppercase font-semibold">{t('lbl_redeem_code', 'Redeem Code')}</span>
-                    <p className="font-bold text-xl tracking-widest num-fix mt-1">{item.redeem_code}</p>
+                  <div className="bg-[var(--secondary-bg-color)] p-3 rounded-lg border border-[var(--border-color)] mb-4 flex flex-col gap-2">
+                    <span className="text-xs text-hint uppercase font-semibold">{t('lbl_code', 'Code')}</span>
+                    <div className="flex items-center gap-2 bg-[var(--bg-color)] p-2 rounded border border-[var(--border-color)]">
+                      <div className="flex-1 overflow-x-auto hide-scrollbar whitespace-nowrap text-sm font-mono num-fix">
+                        {item.redeem_code}
+                      </div>
+                      <button 
+                        onClick={() => copyToClipboard(item.redeem_code, item.id)}
+                        className="p-2 bg-[var(--button-color)] text-[var(--button-text-color)] rounded-md shrink-0 hover:opacity-90 transition-opacity"
+                        title="Copy Code"
+                      >
+                        {copiedCodeId === item.id ? <Check size={16} /> : <Copy size={16} />}
+                      </button>
+                    </div>
                   </div>
                 )}
                 
