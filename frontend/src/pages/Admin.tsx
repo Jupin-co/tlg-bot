@@ -4,10 +4,15 @@ import { loadTranslations } from '../i18n';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'catalog' | 'settings' | 'payments' | 'messages'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'settings' | 'payments' | 'messages' | 'users'>('catalog');
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  
+  // User Logs State
+  const [userLogs, setUserLogs] = useState<any[]>([]);
+  const [viewLogsUserId, setViewLogsUserId] = useState<number | null>(null);
   
   // Catalog States
   const [showCatModal, setShowCatModal] = useState(false);
@@ -20,6 +25,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [newProdPrice, setNewProdPrice] = useState('');
   const [newProdCurrency, setNewProdCurrency] = useState('USD');
   const [newProdDuration, setNewProdDuration] = useState('0');
+  const [newProdStock, setNewProdStock] = useState('-1');
   const [newProdCat, setNewProdCat] = useState('');
   const [newProdDesc, setNewProdDesc] = useState('');
   
@@ -38,6 +44,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [newMsgKey, setNewMsgKey] = useState('');
   const [newMsgEn, setNewMsgEn] = useState('');
   const [newMsgFa, setNewMsgFa] = useState('');
+  
+  const [editingTranslation, setEditingTranslation] = useState<string | null>(null);
+  const [editEnVal, setEditEnVal] = useState('');
+  const [editFaVal, setEditFaVal] = useState('');
 
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
 
@@ -79,6 +89,15 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       .catch(() => showToast("Failed to fetch payments", "error"));
   };
 
+  const fetchUsers = () => {
+    fetch('/api/admin/users', { headers: { 'x-telegram-init-data': initData } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.users) setUsers(data.users);
+      })
+      .catch(() => showToast("Failed to fetch users", "error"));
+  };
+
   const fetchTranslations = () => {
     fetch('/api/translations')
       .then(r => r.json())
@@ -95,6 +114,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     if (activeTab === 'settings') fetchSettings();
     if (activeTab === 'payments') fetchPayments();
     if (activeTab === 'messages') fetchTranslations();
+    if (activeTab === 'users') fetchUsers();
   }, [initData, isAdmin, activeTab]);
 
   const addCategory = async () => {
@@ -124,6 +144,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     setNewProdPrice(p.base_price.toString());
     setNewProdCurrency(p.currency);
     setNewProdDuration(p.duration_days.toString());
+    setNewProdStock(p.stock.toString());
     setNewProdCat(p.category_id ? p.category_id.toString() : '');
     setNewProdDesc(p.description || '');
     setShowProdModal(true);
@@ -135,6 +156,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     setNewProdPrice('');
     setNewProdCurrency('USD');
     setNewProdDuration('0');
+    setNewProdStock('-1');
     setNewProdCat('');
     setNewProdDesc('');
     setShowProdModal(true);
@@ -152,6 +174,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           base_price: parseInt(newProdPrice), 
           currency: newProdCurrency,
           duration_days: parseInt(newProdDuration) || 0,
+          stock: parseInt(newProdStock),
           description: newProdDesc,
           category_id: newProdCat ? parseInt(newProdCat) : null,
           is_selling: true,
@@ -283,6 +306,28 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     fetchTranslations();
   };
 
+  const changeUserRole = async (userId: number, roleId: number) => {
+    const res = await fetch(`/api/admin/users/${userId}/role`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+      body: JSON.stringify({ role_id: roleId })
+    });
+    if (res.ok) {
+      showToast("Role updated", "success");
+      fetchUsers();
+    } else {
+      const data = await res.json();
+      showToast(data.error || "Failed to update role", "error");
+    }
+  };
+
+  const fetchUserLogs = async (userId: number) => {
+    setViewLogsUserId(userId);
+    const res = await fetch(`/api/admin/users/${userId}/logs`, { headers: { 'x-telegram-init-data': initData }});
+    const data = await res.json();
+    if (data.logs) setUserLogs(data.logs);
+  };
+
   if (!isAdmin) {
     return <div><h1 style={{color: 'red'}}>Access Denied</h1></div>;
   }
@@ -323,6 +368,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         <button style={tabStyle('settings')} onClick={() => setActiveTab('settings')}>Settings</button>
         <button style={tabStyle('payments')} onClick={() => setActiveTab('payments')}>Payments</button>
         <button style={tabStyle('messages')} onClick={() => setActiveTab('messages')}>Messages</button>
+        <button style={tabStyle('users')} onClick={() => setActiveTab('users')}>Users</button>
       </div>
 
       {activeTab === 'catalog' && (
@@ -388,7 +434,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 <input type="number" placeholder={t('base_price')} value={newProdPrice} onChange={(e) => setNewProdPrice(e.target.value)} style={{ flex: 1 }} />
                 <input placeholder="Currency (USD)" value={newProdCurrency} onChange={(e) => setNewProdCurrency(e.target.value)} style={{ flex: 1 }} />
               </div>
-              <input type="number" placeholder="Duration (Days, 0 = Lifetime)" value={newProdDuration} onChange={(e) => setNewProdDuration(e.target.value)} />
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input type="number" placeholder={t('placeholder_duration', 'Duration (Days, 0=Lifetime)')} value={newProdDuration} onChange={(e) => setNewProdDuration(e.target.value)} style={{ flex: 1 }} />
+                <input type="number" placeholder={t('placeholder_stock', 'Stock (-1=Unlimited)')} value={newProdStock} onChange={(e) => setNewProdStock(e.target.value)} style={{ flex: 1 }} />
+              </div>
               <select value={newProdCat} onChange={(e) => setNewProdCat(e.target.value)} style={{ padding: 8, width: '100%', borderRadius: 8, border: '1px solid var(--tg-theme-hint-color)', background: 'var(--tg-theme-bg-color)', color: 'var(--tg-theme-text-color)' }}>
                 <option value="">No Category</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -477,16 +526,39 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                   <th style={{ padding: '8px 4px' }}>Key</th>
                   <th style={{ padding: '8px 4px' }}>EN</th>
                   <th style={{ padding: '8px 4px' }}>FA</th>
+                  <th style={{ padding: '8px 4px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(translations.en || {}).map(key => (
-                   <tr key={key} style={{ borderBottom: '1px solid var(--tg-theme-secondary-bg-color)' }}>
-                     <td style={{ padding: '8px 4px', fontSize: 12, fontFamily: 'monospace' }}>{key}</td>
-                     <td style={{ padding: '8px 4px', fontSize: 14 }}>{translations.en?.[key] || '-'}</td>
-                     <td style={{ padding: '8px 4px', fontSize: 14 }}>{translations.fa?.[key] || '-'}</td>
-                   </tr>
-                ))}
+                {Object.keys(translations.en || {}).map(key => {
+                   const isEditing = editingTranslation === key;
+                   return (
+                     <tr key={key} style={{ borderBottom: '1px solid var(--tg-theme-secondary-bg-color)' }}>
+                       <td style={{ padding: '8px 4px', fontSize: 12, fontFamily: 'monospace' }}>{key}</td>
+                       <td style={{ padding: '8px 4px', fontSize: 14 }}>
+                         {isEditing ? <input value={editEnVal} onChange={e => setEditEnVal(e.target.value)} style={{width: '100%', padding: 4, boxSizing: 'border-box'}} /> : (translations.en?.[key] || '-')}
+                       </td>
+                       <td style={{ padding: '8px 4px', fontSize: 14 }}>
+                         {isEditing ? <input value={editFaVal} onChange={e => setEditFaVal(e.target.value)} style={{width: '100%', padding: 4, boxSizing: 'border-box'}} /> : (translations.fa?.[key] || '-')}
+                       </td>
+                       <td style={{ padding: '8px 4px' }}>
+                         {isEditing ? (
+                           <button onClick={async () => {
+                             await saveTranslation('en', key, editEnVal);
+                             await saveTranslation('fa', key, editFaVal);
+                             setEditingTranslation(null);
+                           }} style={{ padding: '4px 8px', fontSize: 12 }}>Save</button>
+                         ) : (
+                           <button onClick={() => {
+                             setEditingTranslation(key);
+                             setEditEnVal(translations.en?.[key] || '');
+                             setEditFaVal(translations.fa?.[key] || '');
+                           }} style={{ padding: '4px 8px', fontSize: 12, background: 'var(--tg-theme-secondary-bg-color)', color: 'var(--tg-theme-text-color)' }}>Edit</button>
+                         )}
+                       </td>
+                     </tr>
+                   );
+                })}
               </tbody>
             </table>
           </div>
@@ -524,6 +596,68 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               </div>
             );
           })}
+        </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div className="mt-4">
+          <h3>Users Management</h3>
+          <div className="card mt-4" style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', textAlign: 'left', marginTop: 10, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--tg-theme-secondary-bg-color)' }}>
+                  <th style={{ padding: '8px 4px' }}>ID</th>
+                  <th style={{ padding: '8px 4px' }}>User</th>
+                  <th style={{ padding: '8px 4px' }}>Role</th>
+                  <th style={{ padding: '8px 4px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.telegram_id} style={{ borderBottom: '1px solid var(--tg-theme-secondary-bg-color)' }}>
+                    <td style={{ padding: '8px 4px', fontSize: 12 }}>{u.telegram_id}</td>
+                    <td style={{ padding: '8px 4px', fontSize: 14 }}>{u.first_name} (@{u.username || '?'})</td>
+                    <td style={{ padding: '8px 4px' }}>
+                      <select 
+                        value={u.role_id} 
+                        onChange={(e) => changeUserRole(u.telegram_id, parseInt(e.target.value))}
+                        disabled={userProfile?.role !== 'SUPER_ADMIN'}
+                        style={{ padding: 4, borderRadius: 4, border: '1px solid var(--tg-theme-hint-color)', background: 'var(--tg-theme-bg-color)', color: 'var(--tg-theme-text-color)' }}
+                      >
+                        <option value={1}>USER</option>
+                        <option value={2}>ADMIN</option>
+                        <option value={3}>SUPER_ADMIN</option>
+                      </select>
+                    </td>
+                    <td style={{ padding: '8px 4px' }}>
+                      <button onClick={() => fetchUserLogs(u.telegram_id)} style={{ padding: '4px 8px', fontSize: 12 }}>View Logs</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {viewLogsUserId !== null && (
+        <div className="modal-overlay">
+          <div className="card modal-content" style={{ maxHeight: '80%', display: 'flex', flexDirection: 'column' }}>
+            <div className="flex justify-between items-center mb-2">
+              <h3>User Logs ({viewLogsUserId})</h3>
+              <button onClick={() => setViewLogsUserId(null)} className="close-btn">X</button>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1, marginTop: 10 }}>
+              {userLogs.length === 0 && <p style={{opacity: 0.6}}>No logs found.</p>}
+              {userLogs.map(l => (
+                <div key={l.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--tg-theme-secondary-bg-color)' }}>
+                  <div style={{ fontSize: 12, opacity: 0.7 }}>{new Date(l.created_at).toLocaleString()}</div>
+                  <div style={{ fontWeight: 'bold' }}>{l.action}</div>
+                  {l.metadata && <div style={{ fontSize: 12, fontFamily: 'monospace', wordBreak: 'break-all', marginTop: 4 }}>{l.metadata}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

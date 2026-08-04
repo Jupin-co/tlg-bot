@@ -525,4 +525,42 @@ api.post('/admin/languages', adminMiddleware, async (c) => {
   return c.json({ success: true });
 });
 
+// --- ADMIN USER MANAGEMENT ---
+api.get('/admin/users', adminMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare(`
+    SELECT u.telegram_id, u.username, u.first_name, u.last_name, u.created_at, p.phone_number, r.id as role_id, r.name as role
+    FROM users u
+    JOIN profiles p ON u.telegram_id = p.user_id
+    JOIN roles r ON p.role_id = r.id
+    ORDER BY u.created_at DESC
+  `).all();
+  return c.json({ users: results });
+});
+
+api.post('/admin/users/:id/role', adminMiddleware, async (c) => {
+  // Only SUPER_ADMIN can change roles, let's verify
+  const reqUser = c.get('user');
+  const dbUser = await c.env.DB.prepare(`
+    SELECT r.name as role FROM profiles p JOIN roles r ON p.role_id = r.id WHERE p.user_id = ?
+  `).bind(reqUser.id).first();
+  
+  if (!dbUser || dbUser.role !== 'SUPER_ADMIN') {
+    return c.json({ error: 'Forbidden. Only Super Admins can change roles.' }, 403);
+  }
+
+  const userId = c.req.param('id');
+  const { role_id } = await c.req.json();
+  
+  await c.env.DB.prepare("UPDATE profiles SET role_id = ? WHERE user_id = ?").bind(role_id, userId).run();
+  return c.json({ success: true });
+});
+
+api.get('/admin/users/:id/logs', adminMiddleware, async (c) => {
+  const userId = c.req.param('id');
+  const { results } = await c.env.DB.prepare(`
+    SELECT * FROM user_usage_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 100
+  `).bind(userId).all();
+  return c.json({ logs: results });
+});
+
 export default api;
