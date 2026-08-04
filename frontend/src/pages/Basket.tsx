@@ -99,7 +99,7 @@ export default function Basket({ initData }: { initData: string }) {
         setInvoiceId(data.invoice_id);
         fetchInvoice(data.invoice_id);
       } else {
-        alert(data.error || 'Checkout failed');
+        alert(data.error || t('msg_checkout_failed', 'Checkout failed'));
       }
     } catch {
       console.error('error');
@@ -111,11 +111,11 @@ export default function Basket({ initData }: { initData: string }) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Only images are allowed');
+      alert(t('msg_only_images', 'Only images are allowed'));
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      alert(t('msg_file_size', 'File size must be less than 10MB'));
       return;
     }
 
@@ -133,14 +133,14 @@ export default function Basket({ initData }: { initData: string }) {
       });
       const data = await res.json();
       if (data.success) {
-        alert('Receipt uploaded successfully! Awaiting approval.');
+        alert(t('msg_upload_success', 'Receipt uploaded successfully! Awaiting approval.'));
         fetchInvoice(invoiceId!);
       } else {
-        alert(data.error || 'Upload failed');
+        alert(data.error || t('msg_upload_failed', 'Upload failed'));
       }
     } catch (err) {
       console.error(err);
-      alert('Upload error or conversion failed');
+      alert(t('msg_upload_error', 'Upload error or conversion failed'));
     } finally {
       setUploading(false);
     }

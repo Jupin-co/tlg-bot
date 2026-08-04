@@ -432,7 +432,7 @@ api.post('/invoice/:id/receipt', async (c) => {
   return c.json({ success: true });
 });
 
-api.get('/receipt-image/:key', adminMiddleware, async (c) => {
+api.get('/receipt-image/:key', async (c) => {
   const key = c.req.param('key');
   // Reconstruct full key
   const fullKey = `receipts/${key}`;

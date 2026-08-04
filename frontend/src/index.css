@@ -83,6 +83,8 @@ input, textarea, select {
   background-color: var(--card-bg-color);
   color: var(--text-color);
   font-size: 16px;
+  user-select: auto;
+  -webkit-user-select: auto;
 }
 
 input:focus, textarea:focus, select:focus {

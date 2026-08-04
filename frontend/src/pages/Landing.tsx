@@ -71,7 +71,7 @@ export default function Landing({ initData }: { initData: string }) {
           onClick={() => navigate('/basket')} 
           style={{ position: 'relative', background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)' }}
         >
-          🛒 Basket
+          🛒 {t('btn_basket', 'Basket')}
           {basketCount > 0 && (
             <span style={{
               position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', 

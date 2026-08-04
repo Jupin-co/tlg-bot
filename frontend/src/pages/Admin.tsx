@@ -520,7 +520,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
           <div className="card mt-4" style={{ overflowX: 'auto' }}>
             <h3>Existing Messages</h3>
-            <table style={{ width: '100%', textAlign: 'left', marginTop: 10, borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: '600px', textAlign: 'left', marginTop: 10, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--tg-theme-secondary-bg-color)' }}>
                   <th style={{ padding: '8px 4px' }}>Key</th>
