@@ -18,76 +18,40 @@ app.post('/bot', async (c) => {
   }
 });
 
-const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telegram E-Commerce Mini App</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--tg-theme-bg-color, #ffffff);
-      color: var(--tg-theme-text-color, #000000);
-      margin: 0;
-      padding: 16px;
-    }
-    .product {
-      border: 1px solid var(--tg-theme-hint-color, #ccc);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 12px;
-      background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-    }
-    h1 { font-size: 24px; }
-  </style>
-</head>
-<body>
-  <h1>Product Catalog</h1>
-  <div id="catalog">Loading...</div>
+// Note: Root path '/' and other static assets will be handled automatically 
+// by Cloudflare Workers Assets configured in wrangler.toml
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+export default {
+  fetch: app.fetch,
+  async scheduled(event: any, env: Env, ctx: any) {
+    // 1. Delete PENDING_PAYMENT invoices > 30 mins old
+    await env.DB.prepare(`
+      DELETE FROM invoices 
+      WHERE status = 'PENDING_PAYMENT' AND expires_at < datetime('now')
+    `).run();
 
-    async function loadCatalog() {
-      try {
-        const res = await fetch('/api/catalog', {
-          headers: {
-            'x-telegram-init-data': tg.initData
+    // 2. Delete REJECTED payments and their invoices > 2 days old
+    const { results } = await env.DB.prepare(`
+      SELECT p.id, p.payment_data, p.invoice_id 
+      FROM payments p 
+      WHERE p.status = 'REJECTED' AND p.created_at < datetime('now', '-2 days')
+    `).all();
+    
+    if (results && results.length > 0) {
+      for (const p of results as any[]) {
+        try {
+          if (p.payment_data) {
+            const data = JSON.parse(p.payment_data);
+            if (data.receipt_key) {
+              await env.RECEIPTS_BUCKET.delete(data.receipt_key);
+            }
           }
-        });
-        
-        if (!res.ok) throw new Error("API Error");
-        
-        const data = await res.json();
-        const catalogDiv = document.getElementById('catalog');
-        
-        if (data.products && data.products.length > 0) {
-          catalogDiv.innerHTML = data.products.map(p => \`
-            <div class="product">
-              <h3>\${p.name}</h3>
-              <p>Price: $\${p.base_price}</p>
-            </div>
-          \`).join('');
-        } else {
-          catalogDiv.innerHTML = "No products available.";
+        } catch (e) {
+          console.error("Failed to delete R2 object", e);
         }
-      } catch (e) {
-        document.getElementById('catalog').innerText = "Error loading catalog. Are you testing outside of Telegram?";
+        // Deleting the invoice will cascade to delete the payment and invoice_items
+        await env.DB.prepare("DELETE FROM invoices WHERE id = ?").bind(p.invoice_id).run();
       }
     }
-
-    loadCatalog();
-  </script>
-</body>
-</html>
-`;
-
-app.get('/', (c) => {
-  return c.html(htmlContent);
-});
-
-export default app;
+  }
+};
