@@ -104,16 +104,6 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
           ]
         }
       });
-      // Also send the reply keyboard for convenience
-      await ctx.reply("Or use the menu button below:", {
-        reply_markup: {
-          keyboard: [
-            [{ text: btn, web_app: { url: webAppUrl } }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
-        }
-      });
     }
   });
 
@@ -140,15 +130,6 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
             ]
           }
         });
-        await ctx.reply("Or use the menu button below:", {
-          reply_markup: {
-            keyboard: [
-              [{ text: btn, web_app: { url: webAppUrl } }]
-            ],
-            resize_keyboard: true,
-            is_persistent: true
-          }
-        });
       } else {
         const msg = await getBotMessage(ctx.env.DB, 'bot_contact_invalid', lang, "Please share your own contact number.");
         await ctx.reply(msg);
@@ -170,15 +151,6 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
           inline_keyboard: [
             [{ text: btn, web_app: { url: webAppUrl } }]
           ]
-        }
-      });
-      await ctx.reply("Or use the menu button below:", {
-        reply_markup: {
-          keyboard: [
-            [{ text: btn, web_app: { url: webAppUrl } }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
         }
       });
     }
