@@ -116,7 +116,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
           className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'inventory' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('inventory')}
         >
-          <div className="flex items-center justify-center gap-2"><Wallet size={16} />{t('tab_wallet', 'Wallet')}</div>
+          <div className="flex items-center justify-center gap-2"><Wallet size={16} />{t('tab_inventory', 'Inventory')}</div>
         </button>
         <button 
           className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
@@ -214,8 +214,8 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                 {item.redeem_code && (
                   <div className="bg-[var(--secondary-bg-color)] p-3 rounded-lg border border-[var(--border-color)] mb-4 flex flex-col gap-2">
                     <span className="text-xs text-hint uppercase font-semibold">{t('lbl_code', 'Code')}</span>
-                    <div className="flex items-center gap-2 bg-[var(--bg-color)] p-2 rounded border border-[var(--border-color)]">
-                      <div className="flex-1 overflow-x-auto hide-scrollbar whitespace-nowrap text-sm font-mono num-fix">
+                    <div className="flex items-start gap-2 bg-[var(--bg-color)] p-2 rounded border border-[var(--border-color)]">
+                      <div className="flex-1 break-all whitespace-normal text-sm font-mono num-fix">
                         {item.redeem_code}
                       </div>
                       <button 
@@ -256,7 +256,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                 className="card flex flex-col gap-3 cursor-pointer hover:border-[var(--button-color)] transition-colors" 
                 onClick={() => {
                   if (p.status === 'PENDING_APPROVAL' || p.status === 'PENDING_PAYMENT') {
-                    navigate(`/basket`);
+                    navigate(`/invoice/${p.invoice_id}`);
                   } else if (p.status === 'APPROVED') {
                     setActiveTab('inventory');
                   }
@@ -282,7 +282,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                 
                 <div className="flex justify-between items-center border-t border-[var(--border-color)] pt-3">
                   <span className="text-sm text-hint font-medium">{t('lbl_amount', 'Amount')}</span>
-                  <span className="font-bold num-fix text-lg">{p.total_price.toLocaleString()} {p.currency}</span>
+                  <span className="font-bold num-fix text-lg">{p.total_price.toLocaleString()} {t(p.currency.toLowerCase(), p.currency)}</span>
                 </div>
               </div>
             ))

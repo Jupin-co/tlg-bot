@@ -152,7 +152,7 @@ api.post('/admin/products', adminMiddleware, async (c) => {
 // Admin: Redeem Codes
 api.get('/admin/products/:id/codes', adminMiddleware, async (c) => {
   const productId = c.req.param('id');
-  const { results } = await c.env.DB.prepare("SELECT * FROM redeem_codes WHERE product_id = ? ORDER BY id DESC").bind(productId).all();
+  const { results } = await c.env.DB.prepare("SELECT c.*, p.invoice_id FROM redeem_codes c LEFT JOIN payments p ON c.payment_id = p.id WHERE c.product_id = ? ORDER BY c.id DESC").bind(productId).all();
   return c.json({ codes: results });
 });
 
@@ -269,7 +269,7 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
          const assignObj = codeAssignments.find(ca => ca.item.product_id === item.product_id);
          if (assignObj) {
            assignedCode = assignObj.codeStr;
-           await c.env.DB.prepare("UPDATE redeem_codes SET payment_id = ? WHERE id = ?").bind(paymentId, assignObj.codeId).run();
+           await c.env.DB.prepare("UPDATE redeem_codes SET payment_id = ?, is_sold = 1 WHERE id = ?").bind(paymentId, assignObj.codeId).run();
            codeAssignments.splice(codeAssignments.indexOf(assignObj), 1); // remove used
            
            // Update remaining stock

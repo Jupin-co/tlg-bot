@@ -136,7 +136,7 @@ export default function Landing({ initData }: { initData: string }) {
                         <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-full p-1 border border-[var(--border-color)]">
                           <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => handleDecrement(inBasket.basket_id)}>-</button>
                           <span className="font-bold num-fix min-w-[20px] text-center">{inBasket.quantity}</span>
-                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id)}>+</button>
+                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id)} disabled={p.stock !== -1 && inBasket.quantity >= p.stock} style={{ opacity: (p.stock !== -1 && inBasket.quantity >= p.stock) ? 0.5 : 1 }}>+</button>
                         </div>
                       );
                     } else {

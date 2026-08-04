@@ -408,15 +408,15 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           </div>
 
           <div>
-            <h3 className="font-bold mb-3">Products</h3>
-            {products.length === 0 && <p className="text-hint">No products available.</p>}
+            <h3 className="font-bold mb-3">{t('catalog')}</h3>
+            {products.length === 0 && <p className="text-hint">{t('no_products')}</p>}
             <div className="flex flex-col gap-3">
               {products.map(p => (
-                <div key={p.id} className="card flex items-center justify-between" style={{ marginBottom: 0 }}>
+                <div key={p.id} className="card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" style={{ marginBottom: 0 }}>
                   <div className="flex-1">
                     <h4 className="font-bold text-lg m-0">{p.name}</h4>
                     <p className="font-bold text-[var(--link-color)] mt-1 num-fix">{p.base_price.toLocaleString()} {p.currency}</p>
-                    <p className="text-xs text-hint mt-1 num-fix">Stock: {p.stock === -1 ? 'Unlimited' : p.stock} | Days: {p.duration_days}</p>
+                    <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? 'Unlimited' : p.stock} | Days: {p.duration_days}</p>
                     <div className="flex gap-2 mt-3">
                       <button onClick={() => openEditProduct(p)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
                         <Edit size={12} /> Edit
@@ -426,7 +426,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                       </button>
                     </div>
                   </div>
-                  <div className="flex flex-col items-center gap-2 ml-3">
+                  <div className="flex flex-row sm:flex-col items-center gap-3 w-full sm:w-auto mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-[var(--border-color)]">
                     <span className="text-xs text-hint">{t('visible')}</span>
                     <label className="switch">
                       <input type="checkbox" checked={!p.is_hidden} onChange={() => toggleVisibility(p)} />
@@ -442,8 +442,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       {/* Category Modal */}
       {showCatModal && (
-        <div className="modal-overlay">
-          <div className="card modal-content w-full max-w-sm">
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div className="card w-full max-w-sm" style={{ maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold m-0">{t('add_category')}</h3>
               <button onClick={() => setShowCatModal(false)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
@@ -456,7 +456,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       {/* Product Modal */}
       {showProdModal && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
           <div className="card modal-content w-full max-w-sm max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold m-0">{editProdId ? 'Edit Product' : t('add_product')}</h3>
@@ -490,7 +490,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       )}
 
       {manageCodesProductId !== null && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
           <div className="card modal-content w-full max-w-sm max-h-[80vh] flex flex-col">
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-bold m-0">Manage Codes</h3>
@@ -606,7 +606,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
           <div className="card overflow-x-auto">
             <h3 className="font-bold mb-3">Existing Messages</h3>
-            <table className="w-full text-left border-collapse" style={{ minWidth: '600px' }}>
+            <div className="overflow-x-auto w-full border border-[var(--border-color)] rounded-xl mt-4 shadow-sm pb-2">
+<table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b-2 border-[var(--border-color)]">
                   <th className="p-2 text-hint font-medium">Key</th>
@@ -639,7 +640,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                              setEditingTranslation(key);
                              setEditEnVal(translations.en?.[key] || '');
                              setEditFaVal(translations.fa?.[key] || '');
-                           }} className="secondary py-1 px-3 text-xs rounded-lg">Edit</button>
+                           }} className="secondary py-1 px-3 text-xs rounded-lg">{t('edit', 'Edit')}</button>
                          )}
                        </td>
                      </tr>
@@ -647,6 +648,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 })}
               </tbody>
             </table>
+</div>
           </div>
         </div>
       )}
@@ -693,7 +695,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         <div className="mt-4">
           <h3 className="font-bold mb-3">Users Management</h3>
           <div className="card overflow-x-auto">
-            <table className="w-full text-left border-collapse" style={{ minWidth: '600px' }}>
+            <div className="overflow-x-auto w-full border border-[var(--border-color)] rounded-xl mt-4 shadow-sm pb-2">
+<table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b-2 border-[var(--border-color)]">
                   <th className="p-2 text-hint font-medium">ID</th>
@@ -731,13 +734,14 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 ))}
               </tbody>
             </table>
+</div>
           </div>
         </div>
       )}
 
       {viewLogsUserId !== null && (
-        <div className="modal-overlay">
-          <div className="card modal-content w-full max-w-lg max-h-[80vh] flex flex-col">
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div className="card w-full max-w-lg flex flex-col" style={{ maxHeight: "90vh", position: "relative" }}>
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-bold m-0">User Logs <span className="text-sm font-normal text-hint">({viewLogsUserId})</span></h3>
               <button onClick={() => setViewLogsUserId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>

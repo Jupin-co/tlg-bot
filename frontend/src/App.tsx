@@ -6,6 +6,7 @@ import { loadTranslations } from './i18n';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Basket from './pages/Basket';
+import InvoiceView from './pages/InvoiceView';
 import { User, Store, Settings } from 'lucide-react';
 
 function Navigation({ userProfile }: { userProfile: any }) {
@@ -113,6 +114,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing initData={initData} />} />
           <Route path="/basket" element={<Basket initData={initData} />} />
+          <Route path="/invoice/:id" element={<InvoiceView initData={initData} />} />
           <Route path="/profile" element={<Profile initData={initData} userProfile={userProfile} error={fetchError} />} />
           <Route path="/admin" element={<Admin initData={initData} userProfile={userProfile} />} />
         </Routes>
