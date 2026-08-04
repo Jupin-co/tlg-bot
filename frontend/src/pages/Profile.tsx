@@ -68,16 +68,17 @@ export default function Profile({ initData, userProfile }: { initData: string, u
     return `${d} days ${h} hours`;
   };
 
-  if (!userProfile) return <div>Loading...</div>;
+  if (!initData) return <div style={{ padding: 20 }}>{t('msg_open_in_telegram', 'Please open this app from inside Telegram.')}</div>;
+  if (!userProfile) return <div style={{ padding: 20 }}>Loading...</div>;
 
   return (
     <div style={{ paddingBottom: 60 }}>
       <h1>{t('profile')}</h1>
 
       <div style={{ display: 'flex', gap: 10, marginTop: 10, marginBottom: 20 }}>
-        <button onClick={() => setActiveTab('profile')} style={{ opacity: activeTab === 'profile' ? 1 : 0.6 }}>Settings</button>
-        <button onClick={() => setActiveTab('inventory')} style={{ opacity: activeTab === 'inventory' ? 1 : 0.6 }}>Wallet</button>
-        <button onClick={() => setActiveTab('payments')} style={{ opacity: activeTab === 'payments' ? 1 : 0.6 }}>Payments</button>
+        <button onClick={() => setActiveTab('profile')} style={{ opacity: activeTab === 'profile' ? 1 : 0.6 }}>{t('tab_settings', 'Settings')}</button>
+        <button onClick={() => setActiveTab('inventory')} style={{ opacity: activeTab === 'inventory' ? 1 : 0.6 }}>{t('tab_wallet', 'Wallet')}</button>
+        <button onClick={() => setActiveTab('payments')} style={{ opacity: activeTab === 'payments' ? 1 : 0.6 }}>{t('tab_payments', 'Payments')}</button>
       </div>
       
       {activeTab === 'profile' && (
@@ -114,15 +115,23 @@ export default function Profile({ initData, userProfile }: { initData: string, u
 
       {activeTab === 'inventory' && (
         <div className="mt-4">
-          <h3>Your Products (Wallet)</h3>
-          {inventory.length === 0 && <p>You have no active products.</p>}
+          <h3>{t('lbl_your_products', 'Your Products (Wallet)')}</h3>
+          {inventory.length === 0 && <p>{t('msg_no_products', 'You have no active products.')}</p>}
           {inventory.map(item => (
             <div key={item.id} className="card mt-2">
               <h4>{item.snapshot_name}</h4>
               <p style={{ fontSize: 12, opacity: 0.8 }}>{item.snapshot_description}</p>
-              <p style={{ marginTop: 10, fontWeight: 'bold' }}>
-                Time left: <span style={{ color: 'var(--tg-theme-button-color)' }}>{calculateTimeLeft(item.access_ends_at)}</span>
-              </p>
+              {item.redeem_code && (
+                <div style={{ marginTop: 10, padding: 10, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 5 }}>
+                  <span style={{ fontSize: 12 }}>Redeem Code:</span>
+                  <p style={{ fontWeight: 'bold', fontSize: 16, letterSpacing: 2 }}>{item.redeem_code}</p>
+                </div>
+              )}
+              {item.access_ends_at && (
+                <p style={{ marginTop: 10, fontWeight: 'bold' }}>
+                  Time left: <span style={{ color: 'var(--tg-theme-button-color)' }}>{calculateTimeLeft(item.access_ends_at)}</span>
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -130,8 +139,8 @@ export default function Profile({ initData, userProfile }: { initData: string, u
 
       {activeTab === 'payments' && (
         <div className="mt-4">
-          <h3>Payment History</h3>
-          {payments.length === 0 && <p>No payment history.</p>}
+          <h3>{t('lbl_payment_history', 'Payment History')}</h3>
+          {payments.length === 0 && <p>{t('msg_no_payments', 'No payment history.')}</p>}
           {payments.map(p => (
             <div 
               key={p.id} 
@@ -147,9 +156,9 @@ export default function Profile({ initData, userProfile }: { initData: string, u
                 }
               }}
             >
-              <h4>Invoice #{p.invoice_id}</h4>
-              <p>Amount: {new Intl.NumberFormat().format(p.total_price)} {p.currency}</p>
-              <p>Status: 
+              <h4>{t('lbl_invoice', 'Invoice')} #{p.invoice_id}</h4>
+              <p>{t('lbl_amount', 'Amount:')} {p.total_price.toLocaleString()} {p.currency}</p>
+              <p>{t('lbl_status', 'Status:')} 
                 <span style={{ 
                   color: p.status === 'APPROVED' ? 'green' : p.status === 'REJECTED' ? 'red' : 'orange',
                   marginLeft: 5 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing';
+import { loadTranslations } from './i18n';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Basket from './pages/Basket';
@@ -57,6 +58,7 @@ function App() {
       // Setup theme based on telegram if not overridden
       document.body.setAttribute('data-theme', tg.colorScheme === 'dark' ? 'dark' : 'light');
     }
+    loadTranslations();
   }, []);
 
   useEffect(() => {

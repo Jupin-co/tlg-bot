@@ -199,3 +199,25 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(22px);
 }
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.7);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+}
+.close-btn {
+  background: transparent;
+  color: #f44336;
+  font-weight: bold;
+  padding: 0;
+  font-size: 20px;
+}

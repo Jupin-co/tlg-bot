@@ -7,12 +7,14 @@ DROP TABLE IF EXISTS user_usage_logs;
 DROP TABLE IF EXISTS profiles;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS product_variants;
+DROP TABLE IF EXISTS redeem_codes;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS settings;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS roles;
 DROP TABLE IF EXISTS themes;
+DROP TABLE IF EXISTS translations;
 DROP TABLE IF EXISTS languages;
 
 CREATE TABLE users (
@@ -41,9 +43,19 @@ INSERT INTO themes (id, name) VALUES (1, 'light'), (2, 'dark');
 
 CREATE TABLE languages (
     id INTEGER PRIMARY KEY,
-    code TEXT UNIQUE NOT NULL
+    code TEXT UNIQUE NOT NULL,
+    is_active BOOLEAN DEFAULT 1
 );
 INSERT INTO languages (id, code) VALUES (1, 'en'), (2, 'fa');
+
+CREATE TABLE translations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lang_code TEXT NOT NULL,
+    message_key TEXT NOT NULL,
+    message_value TEXT NOT NULL,
+    UNIQUE(lang_code, message_key)
+);
+
 
 CREATE TABLE profiles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -97,6 +109,17 @@ CREATE TABLE product_variants (
     stock INTEGER DEFAULT -1,
     FOREIGN KEY(product_id) REFERENCES products(id)
 );
+
+CREATE TABLE redeem_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    code TEXT NOT NULL,
+    is_sold BOOLEAN DEFAULT 0,
+    payment_id INTEGER,
+    FOREIGN KEY(product_id) REFERENCES products(id),
+    FOREIGN KEY(payment_id) REFERENCES payments(id)
+);
+
 
 CREATE TABLE settings (
     key TEXT PRIMARY KEY,
@@ -155,6 +178,7 @@ CREATE TABLE user_inventory (
     snapshot_description TEXT,
     access_starts_at TIMESTAMP,
     access_ends_at TIMESTAMP,
+    redeem_code TEXT,
     FOREIGN KEY(user_id) REFERENCES users(telegram_id),
     FOREIGN KEY(payment_id) REFERENCES payments(id)
 );

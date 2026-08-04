@@ -59,4 +59,20 @@ i18n
     }
   });
 
+export const loadTranslations = async () => {
+  try {
+    const res = await fetch('/api/translations');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.translations) {
+        for (const [lang, msgs] of Object.entries(data.translations)) {
+          i18n.addResourceBundle(lang, 'translation', msgs, true, true);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Failed to load dynamic translations", e);
+  }
+};
+
 export default i18n;

@@ -143,6 +143,41 @@ api.post('/admin/products', adminMiddleware, async (c) => {
   return c.json({ success: true });
 });
 
+// Admin: Redeem Codes
+api.get('/admin/products/:id/codes', adminMiddleware, async (c) => {
+  const productId = c.req.param('id');
+  const { results } = await c.env.DB.prepare("SELECT * FROM redeem_codes WHERE product_id = ? ORDER BY id DESC").bind(productId).all();
+  return c.json({ codes: results });
+});
+
+api.post('/admin/products/:id/codes', adminMiddleware, async (c) => {
+  const productId = c.req.param('id');
+  const { code } = await c.req.json();
+  if (!code) return c.json({ error: 'Code is required' }, 400);
+  
+  await c.env.DB.prepare("INSERT INTO redeem_codes (product_id, code) VALUES (?, ?)").bind(productId, code).run();
+  
+  // Update product stock to be the count of unsold codes (optional, but requested implicitly to sync)
+  const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(productId).first();
+  if (count) {
+    await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, productId).run();
+  }
+  return c.json({ success: true });
+});
+
+api.delete('/admin/products/:id/codes/:codeId', adminMiddleware, async (c) => {
+  const productId = c.req.param('id');
+  const codeId = c.req.param('codeId');
+  await c.env.DB.prepare("DELETE FROM redeem_codes WHERE id = ? AND product_id = ? AND is_sold = 0").bind(codeId, productId).run();
+  
+  const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(productId).first();
+  if (count) {
+    await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, productId).run();
+  }
+  return c.json({ success: true });
+});
+
+
 // --- ADMIN SETTINGS ---
 api.get('/admin/settings', adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare("SELECT key, value FROM settings").all();
@@ -172,36 +207,71 @@ api.get('/admin/payments', adminMiddleware, async (c) => {
 api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
   const paymentId = c.req.param('id');
   
-  // Update payment status
-  await c.env.DB.prepare("UPDATE payments SET status = 'APPROVED' WHERE id = ?").bind(paymentId).run();
-  
   // Get invoice details
   const pRecord = await c.env.DB.prepare("SELECT invoice_id FROM payments WHERE id = ?").bind(paymentId).first();
   if (!pRecord) return c.json({ error: 'Payment not found' }, 404);
   const invoiceId = pRecord.invoice_id;
   
-  await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED' WHERE id = ?").bind(invoiceId).run();
-  
-  // Get invoice items to add to inventory
+  // Get invoice items
   const { results: items } = await c.env.DB.prepare(`
-    SELECT i.user_id, ii.snapshot_name, ii.snapshot_description, ii.snapshot_duration_days
+    SELECT ii.product_id, i.user_id, ii.snapshot_name, ii.snapshot_description, ii.snapshot_duration_days, ii.quantity
     FROM invoice_items ii
     JOIN invoices i ON ii.invoice_id = i.id
     WHERE ii.invoice_id = ?
   `).bind(invoiceId).all();
 
-  // Create inventory records
+  // Validate stock of redeem codes first to prevent partial approval if something ran out
+  const codeAssignments = [];
   for (const item of items as any[]) {
-    const startsAt = new Date();
-    const endsAt = new Date(startsAt.getTime() + item.snapshot_duration_days * 24 * 60 * 60 * 1000);
-    
-    await c.env.DB.prepare(`
-      INSERT INTO user_inventory (user_id, payment_id, snapshot_name, snapshot_description, access_starts_at, access_ends_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(
-      item.user_id, paymentId, item.snapshot_name, item.snapshot_description, 
-      startsAt.toISOString(), endsAt.toISOString()
-    ).run();
+    if (item.snapshot_duration_days > 0) {
+      // Need a redeem code
+      for (let q = 0; q < item.quantity; q++) {
+        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND is_sold = 0 LIMIT 1").bind(item.product_id).first();
+        if (!code) {
+          return c.json({ error: `Not enough redeem codes available for ${item.snapshot_name}.` }, 400);
+        }
+        // Temporarily mark as sold to avoid picking the same one in the loop if quantity > 1
+        await c.env.DB.prepare("UPDATE redeem_codes SET is_sold = 1 WHERE id = ?").bind(code.id).run();
+        codeAssignments.push({ codeId: code.id, codeStr: code.code, item });
+      }
+    }
+  }
+
+  // Finalize approval
+  await c.env.DB.prepare("UPDATE payments SET status = 'APPROVED' WHERE id = ?").bind(paymentId).run();
+  await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED' WHERE id = ?").bind(invoiceId).run();
+  
+  // Create inventory records and update redeem_codes
+  for (const item of items as any[]) {
+    for (let q = 0; q < item.quantity; q++) {
+      const startsAt = new Date();
+      const endsAt = new Date(startsAt.getTime() + item.snapshot_duration_days * 24 * 60 * 60 * 1000);
+      let assignedCode = null;
+      
+      if (item.snapshot_duration_days > 0) {
+         const assignObj = codeAssignments.find(ca => ca.item.product_id === item.product_id);
+         if (assignObj) {
+           assignedCode = assignObj.codeStr;
+           await c.env.DB.prepare("UPDATE redeem_codes SET payment_id = ? WHERE id = ?").bind(paymentId, assignObj.codeId).run();
+           codeAssignments.splice(codeAssignments.indexOf(assignObj), 1); // remove used
+           
+           // Update remaining stock
+           const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(item.product_id).first();
+           if (count) {
+             await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, item.product_id).run();
+           }
+         }
+      }
+
+      await c.env.DB.prepare(`
+        INSERT INTO user_inventory (user_id, payment_id, snapshot_name, snapshot_description, access_starts_at, access_ends_at, redeem_code)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        item.user_id, paymentId, item.snapshot_name, item.snapshot_description, 
+        startsAt.toISOString(), item.snapshot_duration_days > 0 ? endsAt.toISOString() : null,
+        assignedCode
+      ).run();
+    }
   }
   
   return c.json({ success: true });
@@ -414,6 +484,39 @@ api.get('/invoice/:id', async (c) => {
   const paymentInfo = (settings || []).reduce((acc: any, row: any) => { acc[row.key] = row.value; return acc; }, {});
   
   return c.json({ invoice, items, paymentInfo });
+});
+
+// --- I18N TRANSLATIONS ---
+api.get('/translations', async (c) => {
+  const { results: langs } = await c.env.DB.prepare("SELECT id, code, is_active FROM languages").all();
+  const { results: trans } = await c.env.DB.prepare("SELECT lang_code, message_key, message_value FROM translations").all();
+  
+  const translations: any = {};
+  for (const row of (trans || []) as any[]) {
+    if (!translations[row.lang_code]) translations[row.lang_code] = {};
+    translations[row.lang_code][row.message_key] = row.message_value;
+  }
+  
+  return c.json({ languages: langs, translations });
+});
+
+api.post('/admin/translations', adminMiddleware, async (c) => {
+  const { lang_code, message_key, message_value } = await c.req.json();
+  if (!lang_code || !message_key || !message_value) return c.json({ error: 'Missing fields' }, 400);
+  
+  await c.env.DB.prepare(`
+    INSERT INTO translations (lang_code, message_key, message_value) 
+    VALUES (?, ?, ?) 
+    ON CONFLICT(lang_code, message_key) DO UPDATE SET message_value = excluded.message_value
+  `).bind(lang_code, message_key, message_value).run();
+  
+  return c.json({ success: true });
+});
+
+api.post('/admin/languages', adminMiddleware, async (c) => {
+  const { code, is_active } = await c.req.json();
+  await c.env.DB.prepare("UPDATE languages SET is_active = ? WHERE code = ?").bind(is_active ? 1 : 0, code).run();
+  return c.json({ success: true });
 });
 
 export default api;

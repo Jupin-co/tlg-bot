@@ -95,16 +95,16 @@ export default function Landing({ initData }: { initData: string }) {
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                 <div>
-                  <p style={{ fontWeight: 'bold' }}>{new Intl.NumberFormat().format(p.base_price)} {p.currency}</p>
-                  <p style={{ fontSize: 12, opacity: 0.7 }}>
-                    {p.duration_days > 0 ? `Duration: ${p.duration_days} days` : 'Lifetime'}
+                  <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{p.base_price.toLocaleString()} {p.currency}</p>
+                  <p style={{ fontSize: 12, opacity: 0.7, margin: 0 }}>
+                    {p.duration_days > 0 ? `${t('lbl_duration', 'Duration:')} ${p.duration_days} ${t('lbl_days', 'days')}` : t('lbl_lifetime', 'Lifetime')}
                   </p>
                 </div>
                 
                 {p.stock === 0 ? (
-                  <span style={{ color: 'red', fontWeight: 'bold' }}>Out of Stock</span>
+                  <span style={{ color: 'red', fontWeight: 'bold' }}>{t('lbl_out_of_stock', 'Out of Stock')}</span>
                 ) : (
-                  <button onClick={() => addToBasket(p.id)}>Add to Basket</button>
+                  <button onClick={() => addToBasket(p.id)}>{t('btn_add_to_basket', 'Add to Basket')}</button>
                 )}
               </div>
             </div>
