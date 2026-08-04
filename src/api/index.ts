@@ -6,6 +6,12 @@ const api = new Hono<{ Bindings: Env, Variables: { user: any } }>();
 
 // Middleware: Validate Telegram initData
 api.use('*', async (c, next) => {
+  // Public endpoints that don't need initData
+  const path = new URL(c.req.url).pathname;
+  if (path === '/api/translations' || path === '/api/catalog' || path.startsWith('/api/receipt-image')) {
+    return next();
+  }
+
   const initData = c.req.header('x-telegram-init-data');
   if (!initData) {
     return c.json({ error: 'Unauthorized. Missing initData.' }, 401);
