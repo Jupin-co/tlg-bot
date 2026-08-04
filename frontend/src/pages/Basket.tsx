@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Trash2, CreditCard, UploadCloud, ReceiptText, ShoppingCart } from 'lucide-react';
 
 const convertToWebp = (file: File): Promise<Blob> => {
   return new Promise((resolve, reject) => {
@@ -148,23 +149,49 @@ export default function Basket({ initData }: { initData: string }) {
 
   if (invoice) {
     return (
-      <div style={{ paddingBottom: 60 }}>
-        <h2>Invoice #{invoice.id}</h2>
-        <div className="card mt-2">
-          <p><strong>Status:</strong> {invoice.status}</p>
-          <p><strong>Total:</strong> {invoice.total_price.toLocaleString()} {invoice.currency}</p>
+      <div className="container dir-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <button className="secondary" style={{ padding: '8px', borderRadius: '50%' }} onClick={() => navigate('/')}>
+            <ArrowLeft size={20} />
+          </button>
+          <h2 className="text-xl font-bold" style={{ margin: 0 }}>Invoice <span className="num-fix">#{invoice.id}</span></h2>
+        </div>
+        
+        <div className="card text-center flex flex-col items-center">
+          <ReceiptText size={48} opacity={0.5} className="mb-4 text-hint" />
+          
+          <div className="flex flex-col gap-2 w-full text-left">
+            <div className="flex justify-between items-center py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <span className="text-hint font-semibold text-sm uppercase">Status</span>
+              <span className={`font-bold ${invoice.status === 'PENDING_PAYMENT' ? 'text-danger' : 'text-success'}`}>{invoice.status}</span>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-hint font-semibold text-sm uppercase">Total</span>
+              <span className="font-bold text-lg num-fix">{invoice.total_price.toLocaleString()} {invoice.currency}</span>
+            </div>
+          </div>
           
           {invoice.status === 'PENDING_PAYMENT' && (
-            <>
-              <p style={{ color: 'red', fontWeight: 'bold' }}>{t('lbl_expires_in', 'Expires in:')} {timeLeft}</p>
-              <div style={{ marginTop: 20, padding: 10, background: 'var(--tg-theme-secondary-bg-color)', borderRadius: 8 }}>
-                <h4>{t('lbl_payment_instructions', 'Payment Instructions')}</h4>
-                <p>{t('lbl_transfer_to_card', 'Transfer to Card:')}</p>
-                <p><strong>{paymentInfo?.card_number || 'N/A'}</strong></p>
-                <p>{paymentInfo?.card_holder || 'N/A'}</p>
+            <div className="w-full mt-6 text-left">
+              <div className="flex justify-between items-center bg-[rgba(255,59,48,0.1)] px-4 py-3 rounded-lg mb-4">
+                <span className="text-danger font-bold text-sm">{t('lbl_expires_in', 'Expires in:')}</span>
+                <span className="text-danger font-bold num-fix">{timeLeft}</span>
+              </div>
+              
+              <div className="bg-[var(--secondary-bg-color)] p-5 rounded-xl border border-[var(--border-color)]">
+                <div className="flex items-center gap-2 mb-4">
+                  <CreditCard size={20} className="text-hint" />
+                  <h4 className="font-bold" style={{ margin: 0 }}>{t('lbl_payment_instructions', 'Payment Instructions')}</h4>
+                </div>
                 
-                <div style={{ marginTop: 20 }}>
-                  <p>{t('lbl_upload_receipt_instruction', 'Upload your receipt image (Max 10MB):')}</p>
+                <p className="text-hint text-sm mb-1">{t('lbl_transfer_to_card', 'Transfer to Card:')}</p>
+                <div className="bg-[var(--card-bg-color)] p-3 rounded-lg border border-[var(--border-color)] text-center mb-4">
+                  <p className="font-bold text-lg num-fix tracking-widest">{paymentInfo?.card_number || 'N/A'}</p>
+                  <p className="text-sm text-hint mt-1">{paymentInfo?.card_holder || 'N/A'}</p>
+                </div>
+                
+                <div className="mt-6 border-t border-[var(--border-color)] pt-4">
+                  <p className="font-semibold text-sm mb-3 text-center">{t('lbl_upload_receipt_instruction', 'Upload your receipt image (Max 10MB)')}</p>
                   <input 
                     type="file" 
                     accept="image/*" 
@@ -174,53 +201,86 @@ export default function Basket({ initData }: { initData: string }) {
                     style={{ display: 'none' }}
                   />
                   <button 
+                    style={{ width: '100%' }}
                     onClick={() => fileInputRef.current?.click()} 
                     disabled={uploading || timeLeft === 'Expired'}
                   >
+                    <UploadCloud size={20} />
                     {uploading ? t('btn_uploading', 'Uploading...') : t('btn_upload_receipt', 'Upload Receipt')}
                   </button>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {invoice.status === 'PENDING_APPROVAL' && (
-            <p style={{ marginTop: 20, color: 'orange' }}>{t('msg_receipt_review', 'Your receipt is being reviewed by admins.')}</p>
+            <div className="mt-6 p-4 rounded-lg text-center w-full" style={{ background: 'rgba(255,149,0,0.1)', color: '#ff9500' }}>
+              <p className="font-semibold" style={{ margin: 0 }}>{t('msg_receipt_review', 'Your receipt is being reviewed by admins.')}</p>
+            </div>
           )}
           {invoice.status === 'APPROVED' && (
-            <p style={{ marginTop: 20, color: 'green' }}>{t('msg_payment_approved', 'Payment approved! You can check your wallet.')}</p>
+            <div className="mt-6 p-4 rounded-lg text-center w-full" style={{ background: 'rgba(52,199,89,0.1)', color: '#34c759' }}>
+              <p className="font-bold" style={{ margin: 0 }}>{t('msg_payment_approved', 'Payment approved! You can check your wallet.')}</p>
+            </div>
           )}
           
-          <button style={{ marginTop: 20 }} onClick={() => navigate('/profile')}>{t('btn_go_to_profile', 'Go to Profile')}</button>
+          <button className="secondary mt-6 w-full flex items-center justify-center gap-2" onClick={() => navigate('/profile')}>
+            {t('btn_go_to_profile', 'Go to Profile')} <ArrowLeft size={16} style={{ transform: 'rotate(180deg)' }} />
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ paddingBottom: 60 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={() => navigate('/')}>&larr; {t('btn_back', 'Back')}</button>
-        <h1>{t('title_basket', 'Your Basket')}</h1>
+    <div className="container dir-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <button className="secondary" style={{ padding: '8px', borderRadius: '50%' }} onClick={() => navigate('/')}>
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-xl font-bold" style={{ margin: 0 }}>{t('title_basket', 'Your Basket')}</h1>
       </div>
       
       {basket.length === 0 ? (
-        <p className="mt-4">{t('msg_basket_empty', 'Your basket is empty.')}</p>
+        <div className="card text-center py-10 text-hint flex flex-col items-center gap-4 mt-8">
+          <ShoppingCart size={64} opacity={0.3} />
+          <p className="text-lg" style={{ margin: 0 }}>{t('msg_basket_empty', 'Your basket is empty.')}</p>
+          <button onClick={() => navigate('/')} className="mt-4 secondary">
+            Browse Catalog
+          </button>
+        </div>
       ) : (
-        <div className="mt-4">
+        <div className="flex flex-col gap-4">
           {basket.map(item => (
-            <div key={item.basket_id} className="card mt-2 flex justify-between items-center">
-              <div>
-                <h4>{item.name}</h4>
-                <p>{item.base_price.toLocaleString()} {item.currency} x {item.quantity}</p>
+            <div key={item.basket_id} className="card flex justify-between items-center py-4" style={{ marginBottom: 0 }}>
+              <div className="flex-1">
+                <h4 className="font-bold text-lg mb-1" style={{ margin: 0 }}>{item.name}</h4>
+                <div className="flex gap-2 text-hint font-medium">
+                  <span className="num-fix">{item.base_price.toLocaleString()} {item.currency}</span>
+                  <span>×</span>
+                  <span className="num-fix text-text-color font-bold">{item.quantity}</span>
+                </div>
               </div>
-              <button style={{ background: '#f44336' }} onClick={() => handleRemove(item.basket_id)}>{t('btn_remove', 'Remove')}</button>
+              <button 
+                className="danger" 
+                style={{ padding: '10px', borderRadius: '12px' }} 
+                onClick={() => handleRemove(item.basket_id)}
+              >
+                <Trash2 size={20} />
+              </button>
             </div>
           ))}
           
-          <div className="card mt-4">
-            <h3>{t('lbl_total', 'Total:')} {basket.reduce((a, b) => a + b.base_price * b.quantity, 0).toLocaleString()} {basket[0]?.currency}</h3>
-            <button className="mt-2" style={{ width: '100%' }} onClick={handleCheckout}>{t('btn_checkout', 'Checkout')}</button>
+          <div className="card mt-4 bg-[var(--secondary-bg-color)] border-none">
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-hint font-semibold uppercase">{t('lbl_total', 'Total')}</span>
+              <span className="font-bold text-2xl num-fix text-[var(--button-color)]">
+                {basket.reduce((a, b) => a + b.base_price * b.quantity, 0).toLocaleString()} {basket[0]?.currency}
+              </span>
+            </div>
+            <button className="w-full justify-center" style={{ padding: '16px', fontSize: '18px' }} onClick={handleCheckout}>
+              {t('btn_checkout', 'Checkout')}
+            </button>
           </div>
         </div>
       )}

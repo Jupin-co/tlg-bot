@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loadTranslations } from '../i18n';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Check, Search, Eye, Key } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -346,134 +347,86 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   });
 
   return (
-    <div style={{ position: 'relative', paddingBottom: 60 }}>
+    <div className="container dir-auto relative">
       {toast && (
-        <div style={{
-          position: 'fixed', top: 10, left: '50%', transform: 'translateX(-50%)',
-          backgroundColor: toast.type === 'success' ? '#4CAF50' : '#f44336',
-          color: 'white', padding: '10px 20px', borderRadius: 8, zIndex: 3000,
-          boxShadow: '0 4px 6px rgba(0,0,0,0.3)', fontWeight: 'bold'
-        }}>
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg font-bold shadow-lg z-50 text-white ${toast.type === 'success' ? 'bg-success' : 'bg-danger'}`} style={{ zIndex: 3000 }}>
           {toast.msg}
         </div>
       )}
 
-      <h1>{t('admin')}</h1>
+      <h1 className="text-xl font-bold mb-4">{t('admin')}</h1>
       
       {/* Scrollable / Wrap Tab Navigation */}
-      <div style={{ 
-        display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap'
-      }}>
-        <button style={tabStyle('catalog')} onClick={() => setActiveTab('catalog')}>Catalog</button>
-        <button style={tabStyle('settings')} onClick={() => setActiveTab('settings')}>Settings</button>
-        <button style={tabStyle('payments')} onClick={() => setActiveTab('payments')}>Payments</button>
-        <button style={tabStyle('messages')} onClick={() => setActiveTab('messages')}>Messages</button>
-        <button style={tabStyle('users')} onClick={() => setActiveTab('users')}>Users</button>
+      <div className="flex bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6 overflow-x-auto whitespace-nowrap hide-scrollbar">
+        <button 
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'catalog' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          onClick={() => setActiveTab('catalog')}
+        >
+          <div className="flex items-center justify-center gap-2"><ShoppingBag size={16} />Catalog</div>
+        </button>
+        <button 
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'settings' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          <div className="flex items-center justify-center gap-2"><Settings size={16} />Settings</div>
+        </button>
+        <button 
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          onClick={() => setActiveTab('payments')}
+        >
+          <div className="flex items-center justify-center gap-2"><CreditCard size={16} />Payments</div>
+        </button>
+        <button 
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'messages' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          onClick={() => setActiveTab('messages')}
+        >
+          <div className="flex items-center justify-center gap-2"><MessageSquare size={16} />Messages</div>
+        </button>
+        <button 
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all ${activeTab === 'users' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          onClick={() => setActiveTab('users')}
+        >
+          <div className="flex items-center justify-center gap-2"><Users size={16} />Users</div>
+        </button>
       </div>
 
       {activeTab === 'catalog' && (
-        <>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-            <button onClick={() => setShowCatModal(true)} style={{ flex: 1, padding: 10 }}>+ {t('add_category')}</button>
-            <button onClick={openAddProduct} style={{ flex: 1, padding: 10 }}>+ {t('add_product')}</button>
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-3">
+            <button className="flex-1 flex items-center justify-center gap-2" onClick={() => setShowCatModal(true)}>
+              <Plus size={16} /> {t('add_category')}
+            </button>
+            <button className="flex-1 flex items-center justify-center gap-2" onClick={openAddProduct}>
+              <Plus size={16} /> {t('add_product')}
+            </button>
           </div>
 
-          <div className="mt-4">
-            <h3>Products</h3>
-            {products.length === 0 && <p style={{opacity: 0.6}}>No products available.</p>}
-            {products.map(p => (
-              <div key={p.id} className="card flex items-center justify-between mt-2" style={{ padding: '15px' }}>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: '0 0 5px 0' }}>{p.name}</h4>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>{p.base_price.toLocaleString()} {p.currency}</p>
-                  <p style={{ fontSize: 12, opacity: 0.7, margin: '5px 0' }}>Stock: {p.stock === -1 ? 'Unlimited' : p.stock} | Days: {p.duration_days}</p>
-                  <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                    <button onClick={() => openEditProduct(p)} style={{ padding: '6px 12px', fontSize: 12, background: 'var(--tg-theme-secondary-bg-color)', color: 'var(--tg-theme-text-color)' }}>Edit</button>
-                    <button onClick={() => openManageCodes(p.id)} style={{ padding: '6px 12px', fontSize: 12 }}>Manage Codes</button>
+          <div>
+            <h3 className="font-bold mb-3">Products</h3>
+            {products.length === 0 && <p className="text-hint">No products available.</p>}
+            <div className="flex flex-col gap-3">
+              {products.map(p => (
+                <div key={p.id} className="card flex items-center justify-between" style={{ marginBottom: 0 }}>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-lg m-0">{p.name}</h4>
+                    <p className="font-bold text-[var(--link-color)] mt-1 num-fix">{p.base_price.toLocaleString()} {p.currency}</p>
+                    <p className="text-xs text-hint mt-1 num-fix">Stock: {p.stock === -1 ? 'Unlimited' : p.stock} | Days: {p.duration_days}</p>
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={() => openEditProduct(p)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
+                        <Edit size={12} /> Edit
+                      </button>
+                      <button onClick={() => openManageCodes(p.id)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
+                        <Key size={12} /> Codes
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col items-center gap-2" style={{ marginLeft: 10 }}>
-                  <span style={{fontSize: 12}}>{t('visible')}</span>
-                  <label className="switch">
-                    <input type="checkbox" checked={!p.is_hidden} onChange={() => toggleVisibility(p)} />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Category Modal */}
-      {showCatModal && (
-        <div className="modal-overlay">
-          <div className="card modal-content">
-            <div className="flex justify-between items-center mb-4">
-              <h3>{t('add_category')}</h3>
-              <button onClick={() => setShowCatModal(false)} className="close-btn">X</button>
-            </div>
-            <input placeholder={t('name')} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} style={{ width: '100%', marginBottom: 10 }} />
-            <button style={{ width: '100%' }} onClick={addCategory}>{t('save')}</button>
-          </div>
-        </div>
-      )}
-
-      {/* Product Modal */}
-      {showProdModal && (
-        <div className="modal-overlay">
-          <div className="card modal-content">
-            <div className="flex justify-between items-center mb-4">
-              <h3>{editProdId ? 'Edit Product' : t('add_product')}</h3>
-              <button onClick={() => setShowProdModal(false)} className="close-btn">X</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <input placeholder={t('name')} value={newProdName} onChange={(e) => setNewProdName(e.target.value)} />
-              <input placeholder={t('description')} value={newProdDesc} onChange={(e) => setNewProdDesc(e.target.value)} />
-              <div style={{ display: 'flex', gap: 10 }}>
-                <input type="number" placeholder={t('base_price')} value={newProdPrice} onChange={(e) => setNewProdPrice(e.target.value)} style={{ flex: 1 }} />
-                <input placeholder="Currency (USD)" value={newProdCurrency} onChange={(e) => setNewProdCurrency(e.target.value)} style={{ flex: 1 }} />
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <input type="number" placeholder={t('placeholder_duration', 'Duration (Days, 0=Lifetime)')} value={newProdDuration} onChange={(e) => setNewProdDuration(e.target.value)} style={{ flex: 1 }} />
-                <input type="number" placeholder={t('placeholder_stock', 'Stock (-1=Unlimited)')} value={newProdStock} onChange={(e) => setNewProdStock(e.target.value)} style={{ flex: 1 }} />
-              </div>
-              <select value={newProdCat} onChange={(e) => setNewProdCat(e.target.value)} style={{ padding: 8, width: '100%', borderRadius: 8, border: '1px solid var(--tg-theme-hint-color)', background: 'var(--tg-theme-bg-color)', color: 'var(--tg-theme-text-color)' }}>
-                <option value="">No Category</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <button style={{ marginTop: 10 }} onClick={saveProduct}>{t('save')}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {manageCodesProductId !== null && (
-        <div className="modal-overlay">
-          <div className="card modal-content" style={{ maxHeight: '80%', display: 'flex', flexDirection: 'column' }}>
-            <div className="flex justify-between items-center mb-2">
-              <h3>Manage Redeem Codes</h3>
-              <button onClick={() => setManageCodesProductId(null)} className="close-btn">X</button>
-            </div>
-            
-            <div style={{ display: 'flex', gap: 10, marginTop: 10, marginBottom: 10 }}>
-              <input style={{flex: 1}} placeholder="Enter code" value={newCode} onChange={e => setNewCode(e.target.value)} />
-              <button onClick={addCode}>Add</button>
-            </div>
-
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              {productCodes.length === 0 && <p style={{opacity: 0.6}}>No codes added yet.</p>}
-              {productCodes.map(c => (
-                <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--tg-theme-secondary-bg-color)' }}>
-                  <div>
-                    <strong style={{ fontFamily: 'monospace', fontSize: 16 }}>{c.code}</strong>
-                    <span style={{ fontSize: 12, marginLeft: 10, color: c.is_sold ? '#f44336' : '#4CAF50', fontWeight: 'bold' }}>
-                      {c.is_sold ? 'Sold' : 'Available'}
-                    </span>
+                  <div className="flex flex-col items-center gap-2 ml-3">
+                    <span className="text-xs text-hint">{t('visible')}</span>
+                    <label className="switch">
+                      <input type="checkbox" checked={!p.is_hidden} onChange={() => toggleVisibility(p)} />
+                      <span className="slider"></span>
+                    </label>
                   </div>
-                  {!c.is_sold && (
-                    <button onClick={() => deleteCode(c.id)} style={{ background: '#f44336', padding: '4px 10px', fontSize: 12, borderRadius: 15 }}>Delete</button>
-                  )}
                 </div>
               ))}
             </div>
@@ -481,79 +434,159 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         </div>
       )}
 
+      {/* Category Modal */}
+      {showCatModal && (
+        <div className="modal-overlay">
+          <div className="card modal-content w-full max-w-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold m-0">{t('add_category')}</h3>
+              <button onClick={() => setShowCatModal(false)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
+            </div>
+            <input className="w-full mb-4" placeholder={t('name')} value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
+            <button className="w-full" onClick={addCategory}>{t('save')}</button>
+          </div>
+        </div>
+      )}
+
+      {/* Product Modal */}
+      {showProdModal && (
+        <div className="modal-overlay">
+          <div className="card modal-content w-full max-w-sm max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold m-0">{editProdId ? 'Edit Product' : t('add_product')}</h3>
+              <button onClick={() => setShowProdModal(false)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
+            </div>
+            <div className="flex flex-col gap-3">
+              <input placeholder={t('name')} value={newProdName} onChange={(e) => setNewProdName(e.target.value)} />
+              <input placeholder={t('description')} value={newProdDesc} onChange={(e) => setNewProdDesc(e.target.value)} />
+              <div className="flex gap-3">
+                <input type="number" placeholder={t('base_price')} value={newProdPrice} onChange={(e) => setNewProdPrice(e.target.value)} className="flex-1" />
+                <input placeholder="Currency (USD)" value={newProdCurrency} onChange={(e) => setNewProdCurrency(e.target.value)} className="flex-1" />
+              </div>
+              <div className="flex gap-3">
+                <input type="number" placeholder={t('placeholder_duration', 'Duration (Days, 0=Lifetime)')} value={newProdDuration} onChange={(e) => setNewProdDuration(e.target.value)} className="flex-1" />
+                <input type="number" placeholder={t('placeholder_stock', 'Stock (-1=Unlimited)')} value={newProdStock} onChange={(e) => setNewProdStock(e.target.value)} className="flex-1" />
+              </div>
+              <select value={newProdCat} onChange={(e) => setNewProdCat(e.target.value)} className="p-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]">
+                <option value="">No Category</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <button className="mt-2" onClick={saveProduct}>{t('save')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {manageCodesProductId !== null && (
+        <div className="modal-overlay">
+          <div className="card modal-content w-full max-w-sm max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-bold m-0">Manage Codes</h3>
+              <button onClick={() => setManageCodesProductId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
+            </div>
+            
+            <div className="flex gap-2 my-3">
+              <input className="flex-1" placeholder="Enter code" value={newCode} onChange={e => setNewCode(e.target.value)} />
+              <button onClick={addCode}>Add</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto mt-2">
+              {productCodes.length === 0 && <p className="text-hint">No codes added yet.</p>}
+              <div className="flex flex-col gap-2">
+                {productCodes.map(c => (
+                  <div key={c.id} className="flex justify-between items-center p-3 bg-[var(--secondary-bg-color)] rounded-lg">
+                    <div>
+                      <strong className="font-mono text-base tracking-wider num-fix">{c.code}</strong>
+                      <span className={`text-xs ml-3 font-bold ${c.is_sold ? 'text-danger' : 'text-success'}`}>
+                        {c.is_sold ? 'Sold' : 'Available'}
+                      </span>
+                    </div>
+                    {!c.is_sold && (
+                      <button onClick={() => deleteCode(c.id)} className="danger py-1 px-3 text-xs rounded-full">Delete</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'settings' && (
         <div className="card mt-4">
-          <h3>Payment Settings</h3>
-          <p style={{fontSize: 12, opacity: 0.7, marginBottom: 15}}>This information is shown to users for manual card transfers.</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <h3 className="font-bold mb-2">Payment Settings</h3>
+          <p className="text-xs text-hint mb-4">This information is shown to users for manual card transfers.</p>
+          <div className="flex flex-col gap-3">
             <input placeholder="Card Holder Name" value={cardHolder} onChange={e => setCardHolder(e.target.value)} />
-            <input placeholder="Card Number" value={cardNumber} onChange={e => setCardNumber(e.target.value)} />
+            <input placeholder="Card Number" value={cardNumber} onChange={e => setCardNumber(e.target.value)} className="num-fix tracking-widest" />
             <button className="mt-2" onClick={saveSettings}>{t('save')}</button>
           </div>
         </div>
       )}
 
       {activeTab === 'messages' && (
-        <div className="mt-4">
+        <div className="flex flex-col gap-4 mt-4">
           <div className="card">
-             <h3>Active Languages</h3>
-             {languages.map(l => (
-               <div key={l.code} className="flex justify-between items-center py-2">
-                 <span style={{ fontWeight: 'bold' }}>{l.code.toUpperCase()}</span>
-                 <label className="switch">
-                    <input type="checkbox" checked={l.is_active === 1} onChange={() => toggleLanguage(l.code, l.is_active === 1 ? false : true)} />
-                    <span className="slider"></span>
-                 </label>
-               </div>
-             ))}
+             <h3 className="font-bold mb-3">Active Languages</h3>
+             <div className="flex flex-col gap-2">
+               {languages.map(l => (
+                 <div key={l.code} className="flex justify-between items-center py-2 border-b border-[var(--border-color)] last:border-0">
+                   <span className="font-bold uppercase">{l.code}</span>
+                   <label className="switch">
+                      <input type="checkbox" checked={l.is_active === 1} onChange={() => toggleLanguage(l.code, l.is_active === 1 ? false : true)} />
+                      <span className="slider"></span>
+                   </label>
+                 </div>
+               ))}
+             </div>
           </div>
 
-          <div className="card mt-4">
-            <h3>Add/Edit Message</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+          <div className="card">
+            <h3 className="font-bold mb-3">Add/Edit Message</h3>
+            <div className="flex flex-col gap-3">
               <input placeholder="Message Key (e.g. welcome_text)" value={newMsgKey} onChange={e => setNewMsgKey(e.target.value)} />
               <input placeholder="English Translation" value={newMsgEn} onChange={e => setNewMsgEn(e.target.value)} />
               <input placeholder="Farsi Translation" value={newMsgFa} onChange={e => setNewMsgFa(e.target.value)} />
-              <button className="mt-2" onClick={addNewTranslation}>Save Translation</button>
+              <button className="mt-1" onClick={addNewTranslation}>Save Translation</button>
             </div>
           </div>
 
-          <div className="card mt-4" style={{ overflowX: 'auto' }}>
-            <h3>Existing Messages</h3>
-            <table style={{ width: '100%', minWidth: '600px', textAlign: 'left', marginTop: 10, borderCollapse: 'collapse' }}>
+          <div className="card overflow-x-auto">
+            <h3 className="font-bold mb-3">Existing Messages</h3>
+            <table className="w-full text-left border-collapse" style={{ minWidth: '600px' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid var(--tg-theme-secondary-bg-color)' }}>
-                  <th style={{ padding: '8px 4px' }}>Key</th>
-                  <th style={{ padding: '8px 4px' }}>EN</th>
-                  <th style={{ padding: '8px 4px' }}>FA</th>
-                  <th style={{ padding: '8px 4px' }}>Actions</th>
+                <tr className="border-b-2 border-[var(--border-color)]">
+                  <th className="p-2 text-hint font-medium">Key</th>
+                  <th className="p-2 text-hint font-medium">EN</th>
+                  <th className="p-2 text-hint font-medium">FA</th>
+                  <th className="p-2 text-hint font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.keys(translations.en || {}).map(key => {
                    const isEditing = editingTranslation === key;
                    return (
-                     <tr key={key} style={{ borderBottom: '1px solid var(--tg-theme-secondary-bg-color)' }}>
-                       <td style={{ padding: '8px 4px', fontSize: 12, fontFamily: 'monospace' }}>{key}</td>
-                       <td style={{ padding: '8px 4px', fontSize: 14 }}>
-                         {isEditing ? <input value={editEnVal} onChange={e => setEditEnVal(e.target.value)} style={{width: '100%', padding: 4, boxSizing: 'border-box'}} /> : (translations.en?.[key] || '-')}
+                     <tr key={key} className="border-b border-[var(--border-color)] last:border-0">
+                       <td className="p-2 text-xs font-mono">{key}</td>
+                       <td className="p-2 text-sm">
+                         {isEditing ? <input value={editEnVal} onChange={e => setEditEnVal(e.target.value)} className="w-full p-1" /> : (translations.en?.[key] || '-')}
                        </td>
-                       <td style={{ padding: '8px 4px', fontSize: 14 }}>
-                         {isEditing ? <input value={editFaVal} onChange={e => setEditFaVal(e.target.value)} style={{width: '100%', padding: 4, boxSizing: 'border-box'}} /> : (translations.fa?.[key] || '-')}
+                       <td className="p-2 text-sm">
+                         {isEditing ? <input value={editFaVal} onChange={e => setEditFaVal(e.target.value)} className="w-full p-1" /> : (translations.fa?.[key] || '-')}
                        </td>
-                       <td style={{ padding: '8px 4px' }}>
+                       <td className="p-2 text-right">
                          {isEditing ? (
                            <button onClick={async () => {
                              await saveTranslation('en', key, editEnVal);
                              await saveTranslation('fa', key, editFaVal);
                              setEditingTranslation(null);
-                           }} style={{ padding: '4px 8px', fontSize: 12 }}>Save</button>
+                           }} className="py-1 px-3 text-xs rounded-lg">Save</button>
                          ) : (
                            <button onClick={() => {
                              setEditingTranslation(key);
                              setEditEnVal(translations.en?.[key] || '');
                              setEditFaVal(translations.fa?.[key] || '');
-                           }} style={{ padding: '4px 8px', fontSize: 12, background: 'var(--tg-theme-secondary-bg-color)', color: 'var(--tg-theme-text-color)' }}>Edit</button>
+                           }} className="secondary py-1 px-3 text-xs rounded-lg">Edit</button>
                          )}
                        </td>
                      </tr>
@@ -566,9 +599,9 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       )}
 
       {activeTab === 'payments' && (
-        <div className="mt-4">
-          <h3>Pending Receipts</h3>
-          {payments.length === 0 && <p style={{opacity: 0.6}}>No pending payments.</p>}
+        <div className="flex flex-col gap-4 mt-4">
+          <h3 className="font-bold m-0">Pending Receipts</h3>
+          {payments.length === 0 && <p className="text-hint">No pending payments.</p>}
           {payments.map(p => {
             let receiptKey = '';
             try {
@@ -576,22 +609,26 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             } catch {}
 
             return (
-              <div key={p.id} className="card mt-2">
-                <h4>Invoice #{p.invoice_id}</h4>
-                <p>User: {p.first_name} (@{p.username})</p>
-                <p>Amount: <strong>{p.total_price.toLocaleString()} {p.currency}</strong></p>
+              <div key={p.id} className="card relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-[var(--hint-color)]"></div>
+                <h4 className="font-bold m-0">Invoice <span className="num-fix text-sm">#{p.invoice_id}</span></h4>
+                <p className="text-sm text-hint mt-1">User: {p.first_name} (@{p.username})</p>
+                <div className="flex justify-between items-center my-3 border-y border-[var(--border-color)] py-2">
+                  <span className="text-sm font-medium">Amount</span>
+                  <span className="font-bold text-lg num-fix">{p.total_price.toLocaleString()} {p.currency}</span>
+                </div>
                 {receiptKey && (
-                  <div style={{ marginTop: 15, marginBottom: 15, textAlign: 'center', background: 'var(--tg-theme-secondary-bg-color)', padding: 10, borderRadius: 8 }}>
+                  <div className="bg-[var(--secondary-bg-color)] p-2 rounded-xl text-center mb-4">
                     <img 
                       src={`/api/receipt-image/${receiptKey.split('/').pop()}`} 
                       alt="Receipt" 
-                      style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, objectFit: 'contain' }} 
+                      className="max-w-full max-h-[300px] object-contain rounded-lg mx-auto"
                     />
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button style={{ backgroundColor: '#4CAF50', flex: 1 }} onClick={() => handlePayment(p.id, 'approve')}>Approve</button>
-                  <button style={{ backgroundColor: '#f44336', flex: 1 }} onClick={() => handlePayment(p.id, 'reject')}>Reject</button>
+                <div className="flex gap-3">
+                  <button className="flex-1 bg-[rgba(52,199,89,0.1)] text-success border border-transparent font-bold" onClick={() => handlePayment(p.id, 'approve')}>Approve</button>
+                  <button className="flex-1 bg-[rgba(255,59,48,0.1)] text-danger border border-transparent font-bold" onClick={() => handlePayment(p.id, 'reject')}>Reject</button>
                 </div>
               </div>
             );
@@ -601,36 +638,41 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       {activeTab === 'users' && (
         <div className="mt-4">
-          <h3>Users Management</h3>
-          <div className="card mt-4" style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', textAlign: 'left', marginTop: 10, borderCollapse: 'collapse' }}>
+          <h3 className="font-bold mb-3">Users Management</h3>
+          <div className="card overflow-x-auto">
+            <table className="w-full text-left border-collapse" style={{ minWidth: '600px' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid var(--tg-theme-secondary-bg-color)' }}>
-                  <th style={{ padding: '8px 4px' }}>ID</th>
-                  <th style={{ padding: '8px 4px' }}>User</th>
-                  <th style={{ padding: '8px 4px' }}>Role</th>
-                  <th style={{ padding: '8px 4px' }}>Actions</th>
+                <tr className="border-b-2 border-[var(--border-color)]">
+                  <th className="p-2 text-hint font-medium">ID</th>
+                  <th className="p-2 text-hint font-medium">User</th>
+                  <th className="p-2 text-hint font-medium">Role</th>
+                  <th className="p-2 text-hint font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(u => (
-                  <tr key={u.telegram_id} style={{ borderBottom: '1px solid var(--tg-theme-secondary-bg-color)' }}>
-                    <td style={{ padding: '8px 4px', fontSize: 12 }}>{u.telegram_id}</td>
-                    <td style={{ padding: '8px 4px', fontSize: 14 }}>{u.first_name} (@{u.username || '?'})</td>
-                    <td style={{ padding: '8px 4px' }}>
+                  <tr key={u.telegram_id} className="border-b border-[var(--border-color)] last:border-0">
+                    <td className="p-2 text-xs font-mono num-fix">{u.telegram_id}</td>
+                    <td className="p-2 text-sm">
+                      <div className="font-bold">{u.first_name}</div>
+                      <div className="text-xs text-hint">@{u.username || '?'}</div>
+                    </td>
+                    <td className="p-2">
                       <select 
                         value={u.role_id} 
                         onChange={(e) => changeUserRole(u.telegram_id, parseInt(e.target.value))}
                         disabled={userProfile?.role !== 'SUPER_ADMIN'}
-                        style={{ padding: 4, borderRadius: 4, border: '1px solid var(--tg-theme-hint-color)', background: 'var(--tg-theme-bg-color)', color: 'var(--tg-theme-text-color)' }}
+                        className="p-1 text-sm rounded border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]"
                       >
                         <option value={1}>USER</option>
                         <option value={2}>ADMIN</option>
                         <option value={3}>SUPER_ADMIN</option>
                       </select>
                     </td>
-                    <td style={{ padding: '8px 4px' }}>
-                      <button onClick={() => fetchUserLogs(u.telegram_id)} style={{ padding: '4px 8px', fontSize: 12 }}>View Logs</button>
+                    <td className="p-2 text-right">
+                      <button onClick={() => fetchUserLogs(u.telegram_id)} className="secondary py-1 px-3 text-xs rounded-lg flex items-center gap-1 inline-flex">
+                        <Eye size={12} /> Logs
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -642,20 +684,24 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       {viewLogsUserId !== null && (
         <div className="modal-overlay">
-          <div className="card modal-content" style={{ maxHeight: '80%', display: 'flex', flexDirection: 'column' }}>
+          <div className="card modal-content w-full max-w-lg max-h-[80vh] flex flex-col">
             <div className="flex justify-between items-center mb-2">
-              <h3>User Logs ({viewLogsUserId})</h3>
-              <button onClick={() => setViewLogsUserId(null)} className="close-btn">X</button>
+              <h3 className="font-bold m-0">User Logs <span className="text-sm font-normal text-hint">({viewLogsUserId})</span></h3>
+              <button onClick={() => setViewLogsUserId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
             </div>
-            <div style={{ overflowY: 'auto', flex: 1, marginTop: 10 }}>
-              {userLogs.length === 0 && <p style={{opacity: 0.6}}>No logs found.</p>}
-              {userLogs.map(l => (
-                <div key={l.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--tg-theme-secondary-bg-color)' }}>
-                  <div style={{ fontSize: 12, opacity: 0.7 }}>{new Date(l.created_at).toLocaleString()}</div>
-                  <div style={{ fontWeight: 'bold' }}>{l.action}</div>
-                  {l.metadata && <div style={{ fontSize: 12, fontFamily: 'monospace', wordBreak: 'break-all', marginTop: 4 }}>{l.metadata}</div>}
-                </div>
-              ))}
+            <div className="flex-1 overflow-y-auto mt-2 pr-2">
+              {userLogs.length === 0 && <p className="text-hint">No logs found.</p>}
+              <div className="flex flex-col gap-2">
+                {userLogs.map(l => (
+                  <div key={l.id} className="p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="font-bold text-sm">{l.action}</div>
+                      <div className="text-xs text-hint num-fix">{new Date(l.created_at).toLocaleString()}</div>
+                    </div>
+                    {l.metadata && <div className="text-xs font-mono text-[var(--text-color)] opacity-80 break-all p-2 bg-[rgba(0,0,0,0.1)] rounded mt-2">{l.metadata}</div>}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -663,3 +709,4 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     </div>
   );
 }
+

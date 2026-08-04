@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { ShoppingCart, Plus, Calendar, PackageOpen } from 'lucide-react';
 
 export default function Landing({ initData }: { initData: string }) {
   const { t } = useTranslation();
@@ -64,47 +65,59 @@ export default function Landing({ initData }: { initData: string }) {
   };
 
   return (
-    <div style={{ paddingBottom: 60 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>{t('catalog')}</h1>
-        <button 
-          onClick={() => navigate('/basket')} 
-          style={{ position: 'relative', background: 'var(--tg-theme-button-color)', color: 'var(--tg-theme-button-text-color)' }}
-        >
-          🛒 {t('btn_basket', 'Basket')}
-          {basketCount > 0 && (
-            <span style={{
-              position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', 
-              borderRadius: '50%', width: 20, height: 20, fontSize: 12, display: 'flex', 
-              alignItems: 'center', justifyContent: 'center'
-            }}>
-              {basketCount}
-            </span>
-          )}
-        </button>
-      </div>
+    <div className="container dir-auto">
+      <h1 className="text-xl font-bold mb-4">{t('catalog')}</h1>
       
-      <div className="mt-4">
+      {basketCount > 0 && (
+        <button 
+          className="fab flex items-center justify-center"
+          onClick={() => navigate('/basket')} 
+        >
+          <ShoppingCart size={24} />
+          <span style={{
+            position: 'absolute', top: -4, right: -4, background: '#ff3b30', color: 'white', 
+            borderRadius: '12px', padding: '2px 6px', fontSize: 12, fontWeight: 'bold',
+            border: '2px solid var(--bg-color)', lineHeight: 1
+          }}>
+            <span className="num-fix">{basketCount}</span>
+          </span>
+        </button>
+      )}
+      
+      <div className="flex flex-col gap-4 mt-6">
         {products.length === 0 ? (
-          <p>{t('no_products')}</p>
+          <div className="card text-center py-8 text-hint flex flex-col items-center gap-3">
+            <PackageOpen size={48} opacity={0.5} />
+            <p>{t('no_products')}</p>
+          </div>
         ) : (
           products.map(p => (
-            <div key={p.id} className="card mt-2">
-              <h3>{p.name}</h3>
-              {p.description && <p className="mb-2" style={{ color: 'var(--hint-color)' }}>{p.description}</p>}
+            <div key={p.id} className="card" style={{ display: p.is_hidden ? 'none' : 'block' }}>
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="text-lg font-bold" style={{ margin: 0 }}>{p.name}</h3>
+                <span className="font-bold text-lg num-fix" style={{ color: 'var(--link-color)' }}>
+                  {p.base_price.toLocaleString()} {p.currency}
+                </span>
+              </div>
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-                <div>
-                  <p style={{ fontWeight: 'bold', margin: '0 0 5px 0' }}>{p.base_price.toLocaleString()} {p.currency}</p>
-                  <p style={{ fontSize: 12, opacity: 0.7, margin: 0 }}>
-                    {p.duration_days > 0 ? `${t('lbl_duration', 'Duration:')} ${p.duration_days} ${t('lbl_days', 'days')}` : t('lbl_lifetime', 'Lifetime')}
-                  </p>
+              {p.description && <p className="text-hint text-sm mb-4" style={{ marginTop: 4 }}>{p.description}</p>}
+              
+              <div className="flex justify-between items-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border-color)' }}>
+                <div className="flex items-center gap-2 text-hint text-sm">
+                  <Calendar size={16} />
+                  <span className="num-fix">
+                    {p.duration_days > 0 ? `${p.duration_days} ${t('lbl_days', 'days')}` : t('lbl_lifetime', 'Lifetime')}
+                  </span>
                 </div>
                 
                 {p.stock === 0 ? (
-                  <span style={{ color: 'red', fontWeight: 'bold' }}>{t('lbl_out_of_stock', 'Out of Stock')}</span>
+                  <span className="text-danger font-bold text-sm px-4 py-2" style={{ background: 'rgba(255,59,48,0.1)', borderRadius: 'var(--radius-full)' }}>
+                    {t('lbl_out_of_stock', 'Out of Stock')}
+                  </span>
                 ) : (
-                  <button onClick={() => addToBasket(p.id)}>{t('btn_add_to_basket', 'Add to Basket')}</button>
+                  <button onClick={() => addToBasket(p.id)} style={{ borderRadius: 'var(--radius-full)' }}>
+                    <Plus size={18} /> {t('btn_add_to_basket', 'Add to Basket')}
+                  </button>
                 )}
               </div>
             </div>
