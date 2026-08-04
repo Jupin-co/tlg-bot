@@ -54,7 +54,16 @@ function App() {
     const tg = (window as any).Telegram?.WebApp;
     if (tg) {
       tg.expand();
-      setInitData(tg.initData);
+      
+      let data = tg.initData;
+      if (!data) {
+        // Fallback to sessionStorage in case of page reload which strips the hash
+        data = sessionStorage.getItem('tg_init_data') || '';
+      } else {
+        sessionStorage.setItem('tg_init_data', data);
+      }
+      
+      setInitData(data);
       
       // Setup theme based on telegram if not overridden
       document.body.setAttribute('data-theme', tg.colorScheme === 'dark' ? 'dark' : 'light');
