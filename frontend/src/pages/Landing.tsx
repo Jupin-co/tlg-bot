@@ -65,13 +65,6 @@ export default function Landing({ initData }: { initData: string }) {
 
   return (
     <div style={{ paddingBottom: 60 }}>
-      <div style={{ background: 'var(--tg-theme-secondary-bg-color)', padding: 10, marginBottom: 10, borderRadius: 8, fontSize: 10, wordBreak: 'break-all' }}>
-        <strong>Debug Info:</strong><br/>
-        URL: {typeof window !== 'undefined' ? window.location.href : ''}<br/>
-        Hash: {typeof window !== 'undefined' ? window.location.hash : ''}<br/>
-        InitData Length: {initData?.length || 0}<br/>
-        TG Object: {typeof window !== 'undefined' && (window as any).Telegram?.WebApp ? 'Yes' : 'No'}
-      </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>{t('catalog')}</h1>
         <button 
