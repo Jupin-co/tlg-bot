@@ -1,5 +1,9 @@
+DROP TABLE IF EXISTS user_inventory;
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS invoice_items;
+DROP TABLE IF EXISTS invoices;
+DROP TABLE IF EXISTS baskets;
 DROP TABLE IF EXISTS user_usage_logs;
-DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS profiles;
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS product_variants;
@@ -77,6 +81,8 @@ CREATE TABLE products (
     name TEXT NOT NULL,
     description TEXT,
     base_price INTEGER NOT NULL,
+    currency TEXT DEFAULT 'USD',
+    duration_days INTEGER DEFAULT 0,
     stock INTEGER DEFAULT -1,
     is_selling BOOLEAN DEFAULT 1,
     is_hidden BOOLEAN DEFAULT 0,
@@ -96,16 +102,61 @@ CREATE TABLE settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+INSERT INTO settings (key, value) VALUES ('card_holder', ''), ('card_number', '');
 
-CREATE TABLE orders (
+CREATE TABLE baskets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    days INTEGER NOT NULL,
-    gb INTEGER NOT NULL,
-    price INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(telegram_id),
+    FOREIGN KEY(product_id) REFERENCES products(id)
+);
+
+CREATE TABLE invoices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    total_price INTEGER NOT NULL,
+    currency TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'PENDING_PAYMENT',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(telegram_id)
+);
+
+CREATE TABLE invoice_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL,
+    product_id INTEGER,
+    snapshot_name TEXT NOT NULL,
+    snapshot_description TEXT,
+    snapshot_price INTEGER NOT NULL,
+    snapshot_duration_days INTEGER DEFAULT 0,
+    quantity INTEGER DEFAULT 1,
+    FOREIGN KEY(invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+);
+
+CREATE TABLE payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL,
+    method TEXT NOT NULL,
+    payment_data TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING_APPROVAL',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+);
+
+CREATE TABLE user_inventory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    payment_id INTEGER NOT NULL,
+    snapshot_name TEXT NOT NULL,
+    snapshot_description TEXT,
+    access_starts_at TIMESTAMP,
+    access_ends_at TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(telegram_id),
+    FOREIGN KEY(payment_id) REFERENCES payments(id)
 );
 
 CREATE TABLE sessions (

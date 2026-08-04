@@ -7,7 +7,10 @@ export interface Env {
   BOT_TOKEN: string;
   ADMIN_CHAT_ID: string;
   DB: D1Database;
+  RECEIPTS_BUCKET: R2Bucket;
 }
+
+
 
 export type BotContext = Context & {
   env: Env;

@@ -12,6 +12,15 @@ command = "npm --prefix frontend run build"
 BOT_TOKEN = "8818123904:AAG2pNcsMrcROzjAUcXgQQsw6xY7d0oXQ6w"
 ADMIN_CHAT_ID = "6147744511"
 
+# Binding to R2 bucket for receipts
+[[r2_buckets]]
+binding = "RECEIPTS_BUCKET"
+bucket_name = "receip"
+
+# Cron triggers for cleaning up expired invoices
+[triggers]
+crons = ["0 * * * *"] # Run every hour
+
 [[d1_databases]]
 binding = "DB"
 database_name = "ecommerce-bot-db"

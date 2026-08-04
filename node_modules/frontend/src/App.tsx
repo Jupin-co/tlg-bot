@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-ro
 import Landing from './pages/Landing';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import Basket from './pages/Basket';
 import { User, Store, Settings } from 'lucide-react';
 
 function Navigation({ userProfile }: { userProfile: any }) {
@@ -87,6 +88,7 @@ function App() {
       <div className="container" dir={i18n.language === 'fa' ? 'rtl' : 'ltr'}>
         <Routes>
           <Route path="/" element={<Landing initData={initData} />} />
+          <Route path="/basket" element={<Basket initData={initData} />} />
           <Route path="/profile" element={<Profile initData={initData} userProfile={userProfile} />} />
           <Route path="/admin" element={<Admin initData={initData} userProfile={userProfile} />} />
         </Routes>
