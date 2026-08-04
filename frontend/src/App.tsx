@@ -48,6 +48,7 @@ function App() {
   const { i18n } = useTranslation();
   const [initData, setInitData] = useState<string>('');
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
@@ -69,7 +70,13 @@ function App() {
           'x-telegram-init-data': initData
         }
       })
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) {
+          const text = await r.text();
+          throw new Error(`HTTP ${r.status}: ${text}`);
+        }
+        return r.json();
+      })
       .then(data => {
         if (data.user) {
           setUserProfile(data.user);
@@ -80,7 +87,13 @@ function App() {
           if (data.user.theme_preference) {
              document.body.setAttribute('data-theme', data.user.theme_preference);
           }
+        } else {
+          setFetchError(`No user in data: ${JSON.stringify(data)}`);
         }
+      })
+      .catch(e => {
+        console.error(e);
+        setFetchError(e.message || String(e));
       });
     }
   }, [initData, i18n]);
@@ -91,7 +104,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing initData={initData} />} />
           <Route path="/basket" element={<Basket initData={initData} />} />
-          <Route path="/profile" element={<Profile initData={initData} userProfile={userProfile} />} />
+          <Route path="/profile" element={<Profile initData={initData} userProfile={userProfile} error={fetchError} />} />
           <Route path="/admin" element={<Admin initData={initData} userProfile={userProfile} />} />
         </Routes>
       </div>

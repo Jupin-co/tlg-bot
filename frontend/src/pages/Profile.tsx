@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-export default function Profile({ initData, userProfile }: { initData: string, userProfile: any }) {
+export default function Profile({ initData, userProfile, error }: { initData: string, userProfile: any, error?: string | null }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'profile' | 'inventory' | 'payments'>('profile');
@@ -73,6 +73,12 @@ export default function Profile({ initData, userProfile }: { initData: string, u
     return <div style={{ padding: 20 }}>
       <p>{t('msg_open_in_telegram', 'Please open this app from inside Telegram.')}</p>
       <p style={{fontSize: 10, color: 'gray'}}>Debug: tg.initData is empty. tg.initDataUnsafe: {tgStr}</p>
+    </div>;
+  }
+  if (error) {
+    return <div style={{ padding: 20 }}>
+      <h3>Error Loading Profile</h3>
+      <p style={{ color: 'red' }}>{error}</p>
     </div>;
   }
   if (!userProfile) return <div style={{ padding: 20 }}>Loading profile...</div>;
