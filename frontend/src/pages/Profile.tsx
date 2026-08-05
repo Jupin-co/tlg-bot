@@ -2,44 +2,17 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, Package, CreditCard, Share2, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check, Menu, X } from 'lucide-react';
+import { User, Settings, CreditCard, Share2, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Menu, X } from 'lucide-react';
 
 export default function Profile({ initData, userProfile, error }: { initData: string, userProfile: any, error?: string | null }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'inventory' | 'payments'>('profile');
-  const [inventory, setInventory] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'profile' | 'payments'>('profile');
   const [payments, setPayments] = useState<any[]>([]);
-  const [copiedCodeId, setCopiedCodeId] = useState<number | null>(null);
-
-  const copyToClipboard = (text: string, id: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCodeId(id);
-    setTimeout(() => setCopiedCodeId(null), 2000);
-    const invItem = inventory.find(i => i.id === id);
-    fetch('/api/log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
-      body: JSON.stringify({ 
-        action: 'COPY_REDEEM_CODE', 
-        details: { 
-          inventory_id: id,
-          product_name: invItem?.product_name || invItem?.snapshot_name,
-          user_agent: navigator.userAgent
-        } 
-      })
-    }).catch(console.error);
-  };
 
   useEffect(() => {
     if (!initData) return;
-    if (activeTab === 'inventory') {
-      fetch('/api/inventory', { headers: { 'x-telegram-init-data': initData } })
-        .then(r => r.json())
-        .then(data => { if (data.inventory) setInventory(data.inventory); })
-        .catch(console.error);
-    }
     if (activeTab === 'payments') {
       fetch('/api/payments', { headers: { 'x-telegram-init-data': initData } })
         .then(r => r.json())
@@ -81,14 +54,6 @@ export default function Profile({ initData, userProfile, error }: { initData: st
         alert(t('msg_use_share_button', 'Please use the Share Phone Number button in the bot chat.'));
       }
     }
-  };
-
-  const calculateTimeLeft = (endsAt: string) => {
-    const diff = new Date(endsAt).getTime() - Date.now();
-    if (diff <= 0) return 'Expired';
-    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    return `${formatNumber(d)} ${t('lbl_days', 'days')} ${formatNumber(h)} ${t('lbl_hours', 'hours')}`;
   };
 
   if (!initData) {
@@ -164,7 +129,6 @@ export default function Profile({ initData, userProfile, error }: { initData: st
             <div className="drawer-body">
               {[
                 { id: 'profile', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
-                { id: 'inventory', icon: <Package size={18} />, label: t('tab_inventory', 'Inventory') as string },
                 { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string }
               ].map(tab => (
                 <button 
@@ -213,51 +177,6 @@ export default function Profile({ initData, userProfile, error }: { initData: st
         </div>
       )}
 
-      {activeTab === 'inventory' && (
-        <div className="flex flex-col gap-4">
-          {inventory.length === 0 ? (
-            <div className="card text-center py-10 text-hint flex flex-col items-center gap-3">
-              <Package size={48} opacity={0.3} />
-              <p>{t('msg_no_products', 'You have no active products.')}</p>
-            </div>
-          ) : (
-            inventory.map(item => (
-              <div key={item.id} className="card relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-[var(--button-color)]"></div>
-                <h4 className="font-bold text-lg m-0">{item.snapshot_name}</h4>
-                <p className="text-sm text-hint mt-1 mb-4">{item.snapshot_description}</p>
-                
-                {item.redeem_code && (
-                  <div className="bg-[var(--secondary-bg-color)] p-3 rounded-lg border border-[var(--border-color)] mb-4 flex flex-col gap-2">
-                    <span className="text-xs text-hint uppercase font-semibold">{t('lbl_code', 'Code')}</span>
-                    <div className="flex items-start gap-2 bg-[var(--bg-color)] p-2 rounded border border-[var(--border-color)]">
-                      <div className="flex-1 break-all whitespace-normal text-sm font-mono num-fix">
-                        {item.redeem_code}
-                      </div>
-                      <button 
-                        onClick={() => copyToClipboard(item.redeem_code, item.id)}
-                        className="p-2 bg-[var(--button-color)] text-[var(--button-text-color)] rounded-md shrink-0 hover:opacity-90 transition-opacity"
-                        title="Copy Code"
-                      >
-                        {copiedCodeId === item.id ? <Check size={16} /> : <Copy size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                
-                {item.access_ends_at && (
-                  <div className="flex items-center gap-2 text-sm font-medium border-t border-[var(--border-color)] pt-3">
-                    <Clock size={16} className="text-[var(--button-color)]" />
-                    <span>{t('lbl_time_left', 'Time left:')}</span>
-                    <span className="text-[var(--button-color)]">{calculateTimeLeft(item.access_ends_at)}</span>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
       {activeTab === 'payments' && (
         <div className="flex flex-col gap-4">
           {payments.length === 0 ? (
@@ -274,7 +193,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                   if (p.status === 'PENDING_APPROVAL' || p.status === 'PENDING_PAYMENT') {
                     navigate(`/invoice/${p.invoice_id}`);
                   } else if (p.status === 'APPROVED') {
-                    setActiveTab('inventory');
+                    navigate('/inventory');
                   }
                 }}
               >

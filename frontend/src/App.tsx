@@ -7,7 +7,8 @@ import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Basket from './pages/Basket';
 import InvoiceView from './pages/InvoiceView';
-import { User, Store, Settings } from 'lucide-react';
+import Inventory from './pages/Inventory';
+import { User, Store, Settings, Package } from 'lucide-react';
 
 function Navigation({ userProfile }: { userProfile: any }) {
   const { t } = useTranslation();
@@ -24,6 +25,13 @@ function Navigation({ userProfile }: { userProfile: any }) {
       >
         <Store size={24} />
         <span>{t('catalog')}</span>
+      </div>
+      <div 
+        className={`nav-item ${location.pathname === '/inventory' ? 'active' : ''}`}
+        onClick={() => navigate('/inventory')}
+      >
+        <Package size={24} />
+        <span>{t('tab_inventory', 'Inventory') as string}</span>
       </div>
       <div 
         className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
@@ -115,6 +123,7 @@ function App() {
           <Route path="/" element={<Landing initData={initData} />} />
           <Route path="/basket" element={<Basket initData={initData} />} />
           <Route path="/invoice/:id" element={<InvoiceView initData={initData} />} />
+          <Route path="/inventory" element={<Inventory initData={initData} />} />
           <Route path="/profile" element={<Profile initData={initData} userProfile={userProfile} error={fetchError} />} />
           <Route path="/admin" element={<Admin initData={initData} userProfile={userProfile} />} />
         </Routes>
