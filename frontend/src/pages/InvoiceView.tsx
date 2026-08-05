@@ -147,8 +147,8 @@ export default function InvoiceView({ initData }: { initData: string }) {
           </div>
 
           <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${invoice.status === 'PENDING_PAYMENT' ? 'bg-danger/10 text-danger border-danger/20' :
-              invoice.status === 'APPROVED' ? 'bg-success/10 text-success border-success/20' :
-                'bg-warning/10 text-warning border-warning/20'
+            invoice.status === 'APPROVED' ? 'bg-success/10 text-success border-success/20' :
+              'bg-warning/10 text-warning border-warning/20'
             }`}>
             {t('status_' + invoice.status.toLowerCase(), invoice.status) as string}
           </div>
@@ -188,9 +188,6 @@ export default function InvoiceView({ initData }: { initData: string }) {
                   <UploadCloud size={18} className="text-[var(--primary-color)]" />
                   {t('lbl_upload_receipt_instruction', 'Confirm Payment')}
                 </h4>
-                <p className="text-sm text-hint leading-relaxed">
-                  {t('lbl_upload_receipt_desc')}
-                </p>
 
                 <input
                   type="file"

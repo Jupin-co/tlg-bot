@@ -687,12 +687,14 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 {receiptKey && (
                   <div className="mb-4">
                     <p className="text-sm font-semibold mb-2">{t('lbl_receipt', 'Receipt')}</p>
-                    <img 
-                      src={`/api/receipt-image/${receiptKey.split('/').pop()}`} 
-                      alt="Receipt Thumbnail" 
-                      className="w-24 h-24 object-cover rounded-xl cursor-pointer hover:opacity-80 transition-opacity shadow-sm border border-[var(--border-color)]"
-                      onClick={() => setFullScreenImg(`/api/receipt-image/${receiptKey.split('/').pop()}`)}
-                    />
+                    <div style={{ width: '30%', maxWidth: '120px', aspectRatio: '1/1', overflow: 'hidden', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                      <img 
+                        src={`/api/receipt-image/${receiptKey.split('/').pop()}`} 
+                        alt="Receipt Thumbnail" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                        onClick={() => setFullScreenImg(`/api/receipt-image/${receiptKey.split('/').pop()}`)}
+                      />
+                    </div>
                   </div>
                 )}
                 <div className="flex gap-3">
@@ -782,10 +784,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       {fullScreenImg && (
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={() => setFullScreenImg(null)}>
           <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
-            <button className="absolute top-4 left-4 z-50 bg-[rgba(0,0,0,0.5)] text-white border-none py-2 px-4 rounded-full flex items-center gap-2" onClick={() => setFullScreenImg(null)}>
+            <button className="absolute top-4 left-4 z-50 bg-[rgba(0,0,0,0.5)] text-white border-none py-2 px-4 rounded-full flex items-center gap-2" style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 10000, background: 'rgba(0,0,0,0.5)', border: 'none', padding: '8px 16px', borderRadius: '20px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setFullScreenImg(null)}>
               <ArrowLeft size={20} /> <span className="font-bold">{t('btn_back', 'Back') as string}</span>
             </button>
-            <img src={fullScreenImg} alt="Receipt Fullscreen" className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+            <img src={fullScreenImg} alt="Receipt Fullscreen" style={{ width: '90%', maxWidth: '500px', maxHeight: '85%', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()} />
           </div>
         </div>
       )}
