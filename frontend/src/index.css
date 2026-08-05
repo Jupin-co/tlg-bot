@@ -1,55 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
 :root {
-  --bg-color: #F8FAFC;
-  --text-color: #0F172A;
-  --hint-color: #3B82F6;
-  --link-color: #60A5FA;
-  --button-color: #2563EB;
+  /* Premium Pro-Max Design Tokens */
+  --bg-color: #FAFAFA;
+  --text-color: #111827;
+  --hint-color: #6B7280;
+  --link-color: #4F46E5;
+  --button-color: #000000;
   --button-text-color: #ffffff;
-  --secondary-bg-color: #E2E8F0;
+  --secondary-bg-color: #F3F4F6;
   --card-bg-color: #ffffff;
-  --border-color: #CBD5E1;
-  --danger-color: #DC2626;
+  --border-color: #E5E7EB;
+  --danger-color: #EF4444;
   --success-color: #10B981;
-  --shadow-sm: 0 1px 2px rgba(37,99,235,0.04);
-  --shadow-md: 0 4px 12px rgba(37,99,235,0.08);
-  --shadow-float: 0 12px 24px rgba(37,99,235,0.15);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-float: 0 20px 40px rgba(0,0,0,0.12);
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
   --radius-full: 9999px;
 }
 
 [data-theme='dark'] {
-  --bg-color: #0F172A;
-  --text-color: #F8FAFC;
-  --hint-color: #A855F7;
-  --link-color: #C084FC;
-  --button-color: #7C3AED;
-  --button-text-color: #ffffff;
-  --secondary-bg-color: #1E293B;
-  --card-bg-color: #1E293B;
-  --border-color: #334155;
-  --danger-color: #EF4444;
+  --bg-color: #030712;
+  --text-color: #F9FAFB;
+  --hint-color: #9CA3AF;
+  --link-color: #818CF8;
+  --button-color: #ffffff;
+  --button-text-color: #000000;
+  --secondary-bg-color: #111827;
+  --card-bg-color: #0F172A;
+  --border-color: #1F2937;
+  --danger-color: #F87171;
   --success-color: #34D399;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-float: 0 12px 24px rgba(0,0,0,0.6);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.6);
+  --shadow-float: 0 20px 40px rgba(0,0,0,0.8);
 }
 
 [data-theme='light'] {
-  --bg-color: #F8FAFC;
-  --text-color: #0F172A;
-  --hint-color: #3B82F6;
-  --link-color: #60A5FA;
-  --button-color: #2563EB;
+  --bg-color: #FAFAFA;
+  --text-color: #111827;
+  --hint-color: #6B7280;
+  --link-color: #4F46E5;
+  --button-color: #000000;
   --button-text-color: #ffffff;
-  --secondary-bg-color: #E2E8F0;
+  --secondary-bg-color: #F3F4F6;
   --card-bg-color: #ffffff;
-  --border-color: #CBD5E1;
+  --border-color: #E5E7EB;
 }
 
 body {
-  font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
   margin: 0;
@@ -74,13 +76,14 @@ a:hover { opacity: 0.8; }
 button {
   background-color: var(--button-color);
   color: var(--button-text-color);
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full); /* pill shape is very modern */
+  padding: 14px 24px;
   font-size: 15px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -100,12 +103,12 @@ button:disabled {
 
 /* Secondary Button Variant */
 button.secondary {
-  background-color: var(--secondary-bg-color);
+  background-color: transparent;
   color: var(--text-color);
   border: 1px solid var(--border-color);
 }
 button.secondary:hover {
-  background-color: var(--border-color);
+  background-color: var(--secondary-bg-color);
 }
 
 /* Danger Button Variant */
@@ -138,10 +141,13 @@ input:focus, textarea:focus, select:focus {
   background-color: var(--card-bg-color);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 24px;
   margin-bottom: 16px;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.card:active {
+  transform: scale(0.98);
 }
 
 .card:hover {
@@ -236,8 +242,9 @@ input:focus, textarea:focus, select:focus {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Rubik', sans-serif;
+  font-family: 'Outfit', 'Inter', sans-serif;
   font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .container {
