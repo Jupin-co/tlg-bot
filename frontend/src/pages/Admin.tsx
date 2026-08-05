@@ -759,12 +759,12 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       {viewLogsUserId !== null && (
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div className="card w-full max-w-lg flex flex-col" style={{ maxHeight: "90vh", position: "relative" }}>
+          <div className="card w-full" style={{ maxWidth: "500px", maxHeight: "90vh", display: "flex", flexDirection: "column", position: "relative" }}>
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-bold m-0">User Logs <span className="text-sm font-normal text-hint">({viewLogsUserId})</span></h3>
               <button onClick={() => setViewLogsUserId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
             </div>
-            <div className="flex-1 overflow-y-auto mt-2 pr-2">
+            <div style={{ flex: 1, overflowY: 'auto', marginTop: '8px', paddingRight: '8px' }}>
               {userLogs.length === 0 && <p className="text-hint">No logs found.</p>}
               <div className="flex flex-col gap-2">
                 {userLogs.map(l => (
@@ -774,7 +774,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                       <div className="text-xs text-hint num-fix">{new Date(l.created_at).toLocaleString()}</div>
                     </div>
                     {l.metadata && (
-                      <pre className="text-xs font-mono text-[var(--text-color)] opacity-80 overflow-auto p-2 bg-[rgba(0,0,0,0.1)] rounded mt-2 whitespace-pre-wrap break-words" style={{maxHeight: '150px', overflowY: 'auto'}}>
+                      <pre className="text-xs font-mono text-[var(--text-color)] opacity-80 p-2 bg-[rgba(0,0,0,0.1)] rounded mt-2 whitespace-pre-wrap break-words" style={{maxHeight: '200px', overflowY: 'auto'}}>
                         {(() => {
                           try {
                             const parsed = JSON.parse(l.metadata);

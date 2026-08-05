@@ -43,10 +43,19 @@ export default function Basket({ initData }: { initData: string }) {
 
   const handleCheckout = async () => {
     try {
+      const totalValue = basket.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       fetch('/api/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
-        body: JSON.stringify({ action: 'CHECKOUT_START', details: { total_items: basket.length } })
+        body: JSON.stringify({ 
+          action: 'CHECKOUT_START', 
+          details: { 
+            total_items: basket.length,
+            total_value: totalValue,
+            items: basket.map(b => ({ id: b.product_id, qty: b.quantity, price: b.price })),
+            user_agent: navigator.userAgent
+          } 
+        })
       }).catch(console.error);
       const res = await fetch('/api/invoice/create', { method: 'POST', headers: { 'x-telegram-init-data': initData } });
       const data = await res.json();

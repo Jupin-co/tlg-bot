@@ -41,7 +41,17 @@ export default function Landing({ initData }: { initData: string }) {
           'Content-Type': 'application/json',
           'x-telegram-init-data': initData
         },
-        body: JSON.stringify({ action: 'VIEW_CATALOG', metadata: {} })
+        body: JSON.stringify({ 
+          action: 'VIEW_CATALOG', 
+          details: { 
+            products_count: data.products?.length || 0,
+            categories_count: data.categories?.length || 0,
+            user_agent: navigator.userAgent,
+            language: navigator.language,
+            screen_width: window.innerWidth,
+            screen_height: window.innerHeight
+          } 
+        })
       }).catch(console.error);
     })
     .catch(console.error);
@@ -63,13 +73,22 @@ export default function Landing({ initData }: { initData: string }) {
 
   const addToBasket = async (productId: number) => {
     try {
+      const product = products.find(p => p.id === productId);
       fetch('/api/log', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-telegram-init-data': initData
         },
-        body: JSON.stringify({ action: 'ADD_TO_BASKET', details: { product_id: productId } })
+        body: JSON.stringify({ 
+          action: 'ADD_TO_BASKET', 
+          details: { 
+            product_id: productId,
+            product_name: product?.name,
+            product_price: product?.price,
+            user_agent: navigator.userAgent
+          } 
+        })
       }).catch(console.error);
       const res = await fetch('/api/basket/add', {
         method: 'POST',

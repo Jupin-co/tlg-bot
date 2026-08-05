@@ -17,10 +17,18 @@ export default function Profile({ initData, userProfile, error }: { initData: st
     navigator.clipboard.writeText(text);
     setCopiedCodeId(id);
     setTimeout(() => setCopiedCodeId(null), 2000);
+    const invItem = inventory.find(i => i.id === id);
     fetch('/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
-      body: JSON.stringify({ action: 'COPY_REDEEM_CODE', details: { inventory_id: id } })
+      body: JSON.stringify({ 
+        action: 'COPY_REDEEM_CODE', 
+        details: { 
+          inventory_id: id,
+          product_name: invItem?.product_name || invItem?.snapshot_name,
+          user_agent: navigator.userAgent
+        } 
+      })
     }).catch(console.error);
   };
 
