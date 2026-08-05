@@ -67,7 +67,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         if (data.products) setProducts(data.products);
         if (data.categories) setCategories(data.categories);
       })
-      .catch(() => showToast("Failed to fetch catalog", "error"));
+      .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
   };
 
   const fetchSettings = () => {
@@ -79,7 +79,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           setCardNumber(data.settings.card_number || '');
         }
       })
-      .catch(() => showToast("Failed to fetch settings", "error"));
+      .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
   };
 
   
@@ -89,7 +89,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       .then(data => {
         if (data.invoices) setInvoices(data.invoices);
       })
-      .catch(() => showToast("Failed to fetch invoices", "error"));
+      .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
   };
 
   const fetchPayments = () => {
@@ -98,7 +98,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       .then(data => {
         if (data.payments) setPayments(data.payments);
       })
-      .catch(() => showToast("Failed to fetch payments", "error"));
+      .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
   };
 
   const fetchUsers = () => {
@@ -107,7 +107,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       .then(data => {
         if (data.users) setUsers(data.users);
       })
-      .catch(() => showToast("Failed to fetch users", "error"));
+      .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
   };
 
   const fetchTranslations = () => {
@@ -117,7 +117,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         if (data.languages) setLanguages(data.languages);
         if (data.translations) setTranslations(data.translations);
       })
-      .catch(() => showToast("Failed to fetch translations", "error"));
+      .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
   };
 
   useEffect(() => {
@@ -222,10 +222,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
         body: JSON.stringify({ card_holder: cardHolder, card_number: cardNumber })
       });
-      if (res.ok) showToast("Settings saved!", "success");
-      else showToast("Failed to save settings", "error");
+      if (res.ok) showToast(t("toast_save_success", "Saved successfully"), "success");
+      else showToast(t("toast_save_failed", "Failed to save"), "error");
     } catch {
-      showToast("Error saving settings", "error");
+      showToast(t("toast_save_failed", "Failed to save"), "error");
     }
   };
 
@@ -523,7 +523,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                       )}
                     </div>
                     {!c.is_sold && (
-                      <button onClick={() => deleteCode(c.id)} className="danger py-1 px-3 text-xs rounded-full">Delete</button>
+                      <button onClick={() => deleteCode(c.id)} className="danger py-1 px-3 text-xs rounded-full">{t("btn_delete", "Delete")}</button>
                     )}
                   </div>
                 ))}
@@ -600,7 +600,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               <input placeholder="Message Key (e.g. welcome_text)" value={newMsgKey} onChange={e => setNewMsgKey(e.target.value)} />
               <input placeholder="English Translation" value={newMsgEn} onChange={e => setNewMsgEn(e.target.value)} />
               <input placeholder="Farsi Translation" value={newMsgFa} onChange={e => setNewMsgFa(e.target.value)} />
-              <button className="mt-1" onClick={addNewTranslation}>Save Translation</button>
+              <button className="mt-1" onClick={addNewTranslation}>{t("btn_save_translation", "Save Translation")}</button>
             </div>
           </div>
 
@@ -682,8 +682,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                   </div>
                 )}
                 <div className="flex gap-3">
-                  <button className="flex-1 bg-[rgba(52,199,89,0.1)] text-success border border-transparent font-bold" onClick={() => handlePayment(p.id, 'approve')}>Approve</button>
-                  <button className="flex-1 bg-[rgba(255,59,48,0.1)] text-danger border border-transparent font-bold" onClick={() => handlePayment(p.id, 'reject')}>Reject</button>
+                  <button className="flex-1 bg-[rgba(52,199,89,0.1)] text-success border border-transparent font-bold" onClick={() => handlePayment(p.id, 'approve')}>{t("btn_approve", "Approve")}</button>
+                  <button className="flex-1 bg-[rgba(255,59,48,0.1)] text-danger border border-transparent font-bold" onClick={() => handlePayment(p.id, 'reject')}>{t("btn_reject", "Reject")}</button>
                 </div>
               </div>
             );

@@ -129,7 +129,7 @@ export default function InvoiceView({ initData }: { initData: string }) {
         <div className="flex flex-col gap-2 w-full text-left">
           <div className="flex justify-between items-center py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
             <span className="text-hint font-semibold text-sm uppercase">{t('lbl_status', 'Status')}</span>
-            <span className={`font-bold ${invoice.status === 'PENDING_PAYMENT' ? 'text-danger' : 'text-success'}`}>{invoice.status}</span>
+            <span className={`font-bold ${invoice.status === 'PENDING_PAYMENT' ? 'text-danger' : 'text-success'}`}>{t('status_' + invoice.status.toLowerCase(), invoice.status)}</span>
           </div>
           <div className="flex justify-between items-center py-2">
             <span className="text-hint font-semibold text-sm uppercase">{t('lbl_total', 'Total')}</span>
