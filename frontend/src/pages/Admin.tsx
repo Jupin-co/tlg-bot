@@ -359,37 +359,45 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       <div className="flex justify-between items-center mb-6 relative">
         <h1 className="text-xl font-bold m-0">{t('admin')}</h1>
-        <button 
-          className="secondary p-2 rounded-lg flex items-center justify-center"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <Menu size={24} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Sleek Hamburger Menu */}
+          <div className="relative">
+            <button 
+              className="p-2 rounded-full flex items-center justify-center bg-[var(--primary-color)] text-white shadow-md hover:shadow-lg transition-all"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              <Menu size={20} />
+            </button>
 
-        {isMenuOpen && (
-          <div className="absolute top-12 right-0 bg-[var(--card-bg-color)] border border-[var(--border-color)] shadow-xl rounded-xl p-2 flex flex-col gap-1 w-48 z-50">
-            {[
-              { id: 'catalog', icon: <ShoppingBag size={18} />, label: t('tab_catalog', 'Catalog') as string },
-              { id: 'settings', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
-              { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string },
-              { id: 'invoices', icon: <CreditCard size={18} />, label: t('tab_invoices', 'Invoices') as string },
-              { id: 'users', icon: <Users size={18} />, label: t('tab_users', 'Users') as string },
-              { id: 'messages', icon: <MessageSquare size={18} />, label: t('tab_messages', 'Messages') as string }
-            ].map(tab => (
-              <button 
-                key={tab.id}
-                className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg transition-all ${activeTab === tab.id ? 'bg-[var(--primary-color)] text-white' : 'bg-transparent text-[var(--text-color)] hover:bg-[var(--secondary-bg-color)]'}`}
-                onClick={() => {
-                  setActiveTab(tab.id as any);
-                  setIsMenuOpen(false);
-                }}
-              >
-                {tab.icon}
-                <span className="font-semibold">{tab.label}</span>
-              </button>
-            ))}
+            {isMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
+                <div className="absolute top-12 right-0 bg-[var(--card-bg-color)]/90 backdrop-blur-xl border border-[var(--border-color)] shadow-2xl rounded-2xl p-2 flex flex-col w-56 z-50 overflow-hidden transform origin-top-right transition-all">
+                  {[
+                    { id: 'catalog', icon: <ShoppingBag size={18} />, label: t('tab_catalog', 'Catalog') as string },
+                    { id: 'settings', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
+                    { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string },
+                    { id: 'invoices', icon: <CreditCard size={18} />, label: t('tab_invoices', 'Invoices') as string },
+                    { id: 'users', icon: <Users size={18} />, label: t('tab_users', 'Users') as string },
+                    { id: 'messages', icon: <MessageSquare size={18} />, label: t('tab_messages', 'Messages') as string }
+                  ].map(tab => (
+                    <button 
+                      key={tab.id}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--primary-color)] text-white font-semibold shadow-sm' : 'bg-transparent text-[var(--text-color)] hover:bg-[var(--secondary-bg-color)]'}`}
+                      onClick={() => {
+                        setActiveTab(tab.id as any);
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span className={`${activeTab === tab.id ? 'opacity-100' : 'opacity-70'}`}>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {activeTab === 'catalog' && (
@@ -661,11 +669,12 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                   <span className="font-bold text-lg">{formatNumber(p.total_price)} {p.currency}</span>
                 </div>
                 {receiptKey && (
-                  <div className="bg-[var(--secondary-bg-color)] p-2 rounded-xl text-center mb-4">
+                  <div className="mb-4">
+                    <p className="text-sm font-semibold mb-2">{t('lbl_receipt', 'Receipt')}</p>
                     <img 
                       src={`/api/receipt-image/${receiptKey.split('/').pop()}`} 
-                      alt="Receipt" 
-                      className="w-full max-h-48 object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity bg-[var(--bg-color)]"
+                      alt="Receipt Thumbnail" 
+                      className="w-24 h-24 object-cover rounded-xl cursor-pointer hover:opacity-80 transition-opacity shadow-sm border border-[var(--border-color)]"
                       onClick={() => setFullScreenImg(`/api/receipt-image/${receiptKey.split('/').pop()}`)}
                     />
                   </div>

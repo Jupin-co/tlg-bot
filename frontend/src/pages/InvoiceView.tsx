@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CreditCard, UploadCloud, ReceiptText } from 'lucide-react';
+import { ArrowLeft, CreditCard, UploadCloud, ReceiptText, Clock, CheckCircle2 } from 'lucide-react';
 
 export default function InvoiceView({ initData }: { initData: string }) {
   const { t } = useTranslation();
@@ -116,84 +115,127 @@ export default function InvoiceView({ initData }: { initData: string }) {
   }
 
   return (
-    <div className="container dir-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button className="secondary" style={{ padding: '8px', borderRadius: '50%' }} onClick={() => navigate(-1)}>
-          <ArrowLeft size={20} />
+    <div className="container dir-auto max-w-[600px] mx-auto py-4">
+      {/* Sleek Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <button 
+          className="p-2 rounded-full bg-[var(--secondary-bg-color)] hover:bg-[var(--border-color)] transition-colors flex items-center justify-center shrink-0 border-none cursor-pointer" 
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft size={20} className="text-[var(--text-color)]" />
         </button>
-        <h2 className="text-xl font-bold" style={{ margin: 0 }}>{t('lbl_invoice', 'Invoice')} <span className="num-fix">#{invoice.id}</span></h2>
+        <div className="flex flex-col">
+          <h2 className="text-xl font-bold tracking-tight leading-none m-0">{t('lbl_invoice', 'Invoice')}</h2>
+          <span className="text-sm text-hint num-fix">#{invoice.id}</span>
+        </div>
       </div>
       
-      <div className="card text-center flex flex-col items-center">
-        <ReceiptText size={48} opacity={0.5} className="mb-4 text-hint" />
+      {/* Main Card */}
+      <div className="bg-[var(--card-bg-color)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
         
-        <div className="flex flex-col gap-2 w-full text-left">
-          <div className="flex justify-between items-center py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
-            <span className="text-hint font-semibold text-sm uppercase">{t('lbl_status', 'Status')}</span>
-            <span className={`font-bold ${invoice.status === 'PENDING_PAYMENT' ? 'text-danger' : 'text-success'}`}>{t('status_' + invoice.status.toLowerCase(), invoice.status) as string}</span>
+        {/* Top Summary Section */}
+        <div className="p-6 border-b border-[var(--border-color)] flex flex-col items-center justify-center bg-[var(--secondary-bg-color)] relative">
+          <div className="w-16 h-16 rounded-full bg-[var(--bg-color)] flex items-center justify-center mb-4">
+            <ReceiptText size={28} className="text-[var(--primary-color)]" />
           </div>
-          <div className="flex justify-between items-center py-2">
-            <span className="text-hint font-semibold text-sm uppercase">{t('lbl_total', 'Total')}</span>
-            <span className="font-bold text-lg num-fix">{formatNumber(invoice.total_price)} {t(invoice.currency.toLowerCase(), invoice.currency) as string}</span>
+          
+          <div className="text-center mb-4">
+            <p className="text-sm text-hint uppercase tracking-wider font-semibold mb-1">{t('lbl_total', 'Total Amount')}</p>
+            <div className="text-4xl font-extrabold tracking-tight num-fix">
+              {formatNumber(invoice.total_price)} <span className="text-xl text-hint font-normal">{t(invoice.currency.toLowerCase(), invoice.currency) as string}</span>
+            </div>
+          </div>
+          
+          <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border ${
+            invoice.status === 'PENDING_PAYMENT' ? 'bg-danger/10 text-danger border-danger/20' : 
+            invoice.status === 'APPROVED' ? 'bg-success/10 text-success border-success/20' : 
+            'bg-warning/10 text-warning border-warning/20'
+          }`}>
+            {t('status_' + invoice.status.toLowerCase(), invoice.status) as string}
           </div>
         </div>
         
+        {/* Expiry Warning (if pending) */}
         {invoice.status === 'PENDING_PAYMENT' && (
-          <div className="w-full mt-6 text-left">
-            <div className="flex justify-between items-center bg-[rgba(255,59,48,0.1)] px-4 py-3 rounded-lg mb-4">
-              <span className="text-danger font-bold text-sm">{t('lbl_expires_in', 'Expires in:')}</span>
-              <span className="text-danger font-bold num-fix">{timeLeft}</span>
-            </div>
-            
-            <div className="bg-[var(--secondary-bg-color)] p-5 rounded-xl border border-[var(--border-color)]">
-              <div className="flex items-center gap-2 mb-4">
-                <CreditCard size={20} className="text-hint" />
-                <h4 className="font-bold" style={{ margin: 0 }}>{t('lbl_payment_instructions', 'Payment Instructions')}</h4>
+          <div className="p-4 bg-danger/5 border-b border-[rgba(255,59,48,0.1)] flex items-center justify-between">
+            <span className="text-danger font-medium text-sm flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-danger animate-pulse"></span>
+              {t('lbl_expires_in', 'Time remaining to pay:')}
+            </span>
+            <span className="text-danger font-bold num-fix text-lg tracking-tight bg-[var(--card-bg-color)] px-2 rounded-md">{timeLeft}</span>
+          </div>
+        )}
+
+        {/* Content Section */}
+        <div className="p-6">
+          {invoice.status === 'PENDING_PAYMENT' && (
+            <div className="flex flex-col gap-6">
+              
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <CreditCard size={18} className="text-[var(--primary-color)]" />
+                  <h4 className="font-bold text-sm uppercase tracking-wide m-0">{t('lbl_payment_instructions', 'Payment Details')}</h4>
+                </div>
+                
+                <div className="bg-[var(--secondary-bg-color)] p-4 rounded-xl border border-[var(--border-color)]">
+                  <p className="text-hint text-xs uppercase font-semibold mb-2">{t('lbl_transfer_to_card', 'Transfer exact amount to:')}</p>
+                  <p className="font-bold text-xl num-fix tracking-widest break-all mb-1">{paymentInfo?.card_number || 'N/A'}</p>
+                  <p className="text-sm font-medium opacity-80">{paymentInfo?.card_holder || 'N/A'}</p>
+                </div>
               </div>
               
-              <p className="text-hint text-sm mb-1">{t('lbl_transfer_to_card', 'Transfer to Card:')}</p>
-              <div className="bg-[var(--card-bg-color)] p-3 rounded-lg border border-[var(--border-color)] text-center mb-4">
-                <p className="font-bold text-lg num-fix tracking-widest">{paymentInfo?.card_number || 'N/A'}</p>
-                <p className="text-sm text-hint mt-1">{paymentInfo?.card_holder || 'N/A'}</p>
-              </div>
-              
-              <div className="mt-6 border-t border-[var(--border-color)] pt-4">
-                <p className="font-semibold text-sm mb-3 text-center">{t('lbl_upload_receipt_instruction', 'Upload your receipt image (Max 10MB)')}</p>
+              <div className="flex flex-col gap-3">
+                <h4 className="font-bold text-sm uppercase tracking-wide m-0 flex items-center gap-2">
+                  <UploadCloud size={18} className="text-[var(--primary-color)]" />
+                  {t('lbl_upload_receipt_instruction', 'Confirm Payment')}
+                </h4>
+                <p className="text-sm text-hint leading-relaxed">
+                  {t('lbl_upload_receipt_desc', 'After transferring the funds, upload a screenshot or photo of your receipt. (Max 10MB)')}
+                </p>
+                
                 <input 
                   type="file" 
                   accept="image/*" 
                   onChange={handleFileUpload} 
                   disabled={uploading || timeLeft === 'Expired'}
                   ref={fileInputRef}
+                  className="hidden"
                   style={{ display: 'none' }}
                 />
+                
                 <button 
-                  style={{ width: '100%' }}
+                  className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer ${uploading || timeLeft === 'Expired' ? 'bg-[var(--secondary-bg-color)] text-hint cursor-not-allowed' : 'bg-[var(--primary-color)] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5'}`}
                   onClick={() => fileInputRef.current?.click()} 
                   disabled={uploading || timeLeft === 'Expired'}
                 >
-                  <UploadCloud size={20} />
-                  {uploading ? t('btn_uploading', 'Uploading...') : t('btn_upload_receipt', 'Upload Receipt')}
+                  <UploadCloud size={20} className={uploading ? 'animate-bounce' : ''} />
+                  {uploading ? t('btn_uploading', 'Uploading securely...') : t('btn_upload_receipt', 'Upload Receipt Image')}
                 </button>
               </div>
+              
             </div>
-          </div>
-        )}
+          )}
 
-        {invoice.status === 'PENDING_APPROVAL' && (
-          <div className="mt-6 p-4 rounded-lg text-center w-full" style={{ background: 'rgba(255,149,0,0.1)', color: '#ff9500' }}>
-            <p className="font-semibold" style={{ margin: 0 }}>{t('msg_receipt_review', 'Your receipt is being reviewed by admins.')}</p>
-          </div>
-        )}
-        {invoice.status === 'APPROVED' && (
-          <div className="mt-6 p-4 rounded-lg text-center w-full" style={{ background: 'rgba(52,199,89,0.1)', color: '#34c759' }}>
-            <p className="font-bold" style={{ margin: 0 }}>{t('msg_payment_approved', 'Payment approved! You can check your inventory.')}</p>
-          </div>
-        )}
-        
-        <button className="secondary mt-6 w-full flex items-center justify-center gap-2" onClick={() => navigate('/profile')}>
-          {t('btn_go_to_profile', 'Go to Profile')} <ArrowLeft size={16} style={{ transform: 'rotate(180deg)' }} />
-        </button>
+          {invoice.status === 'PENDING_APPROVAL' && (
+            <div className="flex flex-col items-center justify-center text-center py-6">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 text-warning" style={{ backgroundColor: 'rgba(255, 149, 0, 0.1)' }}>
+                <Clock size={28} />
+              </div>
+              <h3 className="text-lg font-bold mb-2">{t('status_pending_approval', 'Under Review')}</h3>
+              <p className="text-sm text-hint max-w-xs">{t('msg_receipt_review', 'Your receipt has been securely uploaded and is currently being verified by our team.')}</p>
+            </div>
+          )}
+          
+          {invoice.status === 'APPROVED' && (
+            <div className="flex flex-col items-center justify-center text-center py-6">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 text-success" style={{ backgroundColor: 'rgba(52, 199, 89, 0.1)' }}>
+                <CheckCircle2 size={28} />
+              </div>
+              <h3 className="text-lg font-bold mb-2">{t('status_approved', 'Payment Successful')}</h3>
+              <p className="text-sm text-hint max-w-xs">{t('msg_payment_approved', 'Your payment has been verified. You can now access your products in your inventory.')}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, Package, CreditCard, Share2, Languages, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check, Menu } from 'lucide-react';
+import { User, Settings, Package, CreditCard, Share2, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check, Menu } from 'lucide-react';
 
 export default function Profile({ initData, userProfile, error }: { initData: string, userProfile: any, error?: string | null }) {
   const { t, i18n } = useTranslation();
@@ -112,34 +112,60 @@ export default function Profile({ initData, userProfile, error }: { initData: st
     <div className="container dir-auto">
       <div className="flex justify-between items-center mb-6 relative">
         <h1 className="text-xl font-bold m-0">{t('profile')}</h1>
-        <button 
-          className="secondary p-2 rounded-lg flex items-center justify-center"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <Menu size={24} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Theme Toggle Inline */}
+          <button 
+            className="secondary p-2 rounded-full flex items-center justify-center transition-colors bg-[var(--secondary-bg-color)] hover:bg-[var(--border-color)]"
+            onClick={() => handleThemeChange(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark')}
+            title={t('theme') as string}
+          >
+            {document.body.getAttribute('data-theme') === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
+          
+          {/* Language Toggle Inline */}
+          <button 
+            className="secondary p-2 rounded-full flex items-center justify-center font-bold text-sm transition-colors bg-[var(--secondary-bg-color)] hover:bg-[var(--border-color)] w-10 h-10"
+            onClick={() => handleLanguageChange(i18n.language === 'en' ? 'fa' : 'en')}
+            title={t('language') as string}
+          >
+            {i18n.language === 'en' ? 'FA' : 'EN'}
+          </button>
 
-        {isMenuOpen && (
-          <div className="absolute top-12 right-0 bg-[var(--card-bg-color)] border border-[var(--border-color)] shadow-xl rounded-xl p-2 flex flex-col gap-1 w-48 z-50">
-            {[
-              { id: 'profile', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
-              { id: 'inventory', icon: <Package size={18} />, label: t('tab_inventory', 'Inventory') as string },
-              { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string }
-            ].map(tab => (
-              <button 
-                key={tab.id}
-                className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg transition-all ${activeTab === tab.id ? 'bg-[var(--primary-color)] text-white' : 'bg-transparent text-[var(--text-color)] hover:bg-[var(--secondary-bg-color)]'}`}
-                onClick={() => {
-                  setActiveTab(tab.id as any);
-                  setIsMenuOpen(false);
-                }}
-              >
-                {tab.icon}
-                <span className="font-semibold">{tab.label}</span>
-              </button>
-            ))}
+          {/* Sleek Hamburger Menu */}
+          <div className="relative">
+            <button 
+              className="p-2 rounded-full flex items-center justify-center bg-[var(--primary-color)] text-white shadow-md hover:shadow-lg transition-all"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              <Menu size={20} />
+            </button>
+
+            {isMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
+                <div className="absolute top-12 right-0 bg-[var(--card-bg-color)]/90 backdrop-blur-xl border border-[var(--border-color)] shadow-2xl rounded-2xl p-2 flex flex-col w-56 z-50 overflow-hidden transform origin-top-right transition-all">
+                  {[
+                    { id: 'profile', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
+                    { id: 'inventory', icon: <Package size={18} />, label: t('tab_inventory', 'Inventory') as string },
+                    { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string }
+                  ].map(tab => (
+                    <button 
+                      key={tab.id}
+                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--primary-color)] text-white font-semibold shadow-sm' : 'bg-transparent text-[var(--text-color)] hover:bg-[var(--secondary-bg-color)]'}`}
+                      onClick={() => {
+                        setActiveTab(tab.id as any);
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span className={`${activeTab === tab.id ? 'opacity-100' : 'opacity-70'}`}>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
       
       {activeTab === 'profile' && (
@@ -167,49 +193,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
             )}
           </div>
 
-          <div className="flex gap-4">
-            <div className="card flex-1">
-              <div className="flex items-center gap-2 mb-3">
-                <Languages size={18} className="text-hint" />
-                <h3 className="font-bold m-0">{t('language')}</h3>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  className={`flex-1 py-2 text-sm ${i18n.language === 'en' ? 'bg-[var(--button-color)] text-[var(--button-text-color)]' : 'secondary'}`} 
-                  onClick={() => handleLanguageChange('en')}
-                >
-                  EN
-                </button>
-                <button 
-                  className={`flex-1 py-2 text-sm ${i18n.language === 'fa' ? 'bg-[var(--button-color)] text-[var(--button-text-color)]' : 'secondary'}`} 
-                  onClick={() => handleLanguageChange('fa')}
-                >
-                  فا
-                </button>
-              </div>
-            </div>
 
-            <div className="card flex-1">
-              <div className="flex items-center gap-2 mb-3">
-                {document.body.getAttribute('data-theme') === 'dark' ? <Moon size={18} className="text-hint" /> : <Sun size={18} className="text-hint" />}
-                <h3 className="font-bold m-0">{t('theme')}</h3>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  className={`flex-1 py-2 text-sm ${document.body.getAttribute('data-theme') === 'light' ? 'bg-[var(--button-color)] text-[var(--button-text-color)]' : 'secondary'}`} 
-                  onClick={() => handleThemeChange('light')}
-                >
-                  <Sun size={16} className="mx-auto" />
-                </button>
-                <button 
-                  className={`flex-1 py-2 text-sm ${document.body.getAttribute('data-theme') === 'dark' ? 'bg-[var(--button-color)] text-[var(--button-text-color)]' : 'secondary'}`} 
-                  onClick={() => handleThemeChange('dark')}
-                >
-                  <Moon size={16} className="mx-auto" />
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
