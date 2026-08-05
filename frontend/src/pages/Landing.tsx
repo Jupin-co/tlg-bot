@@ -118,7 +118,7 @@ export default function Landing({ initData }: { initData: string }) {
             <div key={p.id} className="card" style={{ display: p.is_hidden ? 'none' : 'block' }}>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-bold" style={{ margin: 0 }}>{p.name}</h3>
-                <span className="font-bold text-lg" style={{ color: 'var(--link-color)' }}>{formatNumber(p.base_price)} {t(p.currency.toLowerCase(), p.currency)}
+                <span className="font-bold text-lg" style={{ color: 'var(--link-color)' }}>{formatNumber(p.base_price)} {t(p.currency.toLowerCase(), p.currency) as string}
                 </span>
               </div>
               
@@ -127,7 +127,7 @@ export default function Landing({ initData }: { initData: string }) {
               <div className="flex justify-between items-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border-color)' }}>
                 <div className="flex items-center gap-2 text-hint text-sm">
                   <Calendar size={16} />
-                  <span>{p.duration_days > 0 ? `${formatNumber(p.duration_days)} ${t('lbl_days', 'days')}` : t('lbl_lifetime', 'Lifetime')}</span>
+                  <span>{p.duration_days > 0 ? `${formatNumber(p.duration_days)} ${t('lbl_days', 'days')}` : t('lbl_lifetime', 'Lifetime') as string}</span>
                 </div>
                 
                 {p.stock === 0 ? (

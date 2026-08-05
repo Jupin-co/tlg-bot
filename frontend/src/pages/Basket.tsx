@@ -84,7 +84,7 @@ export default function Basket({ initData }: { initData: string }) {
               <div className="flex-1">
                 <h4 className="font-bold text-lg mb-1" style={{ margin: 0 }}>{item.name}</h4>
                 <div className="text-hint font-medium">
-                  <span>{formatNumber(item.base_price)} {t(item.currency.toLowerCase(), item.currency)}</span>
+                  <span>{formatNumber(item.base_price)} {t(item.currency.toLowerCase(), item.currency) as string}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-xl p-1 border border-[var(--border-color)]">
