@@ -367,3 +367,11 @@ td {
   vertical-align: middle;
 }
 tr:last-child td { border-bottom: none; }
+
+
+body[dir="rtl"] {
+  font-family: 'Vazirmatn', sans-serif !important;
+}
+body[dir="rtl"] h1, body[dir="rtl"] h2, body[dir="rtl"] h3, body[dir="rtl"] h4, body[dir="rtl"] h5, body[dir="rtl"] h6, body[dir="rtl"] .font-bold {
+  font-family: 'Vazirmatn', sans-serif !important;
+}

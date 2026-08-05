@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, Package, CreditCard, Share2, Languages, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check } from 'lucide-react';
+import { User, Settings, Package, CreditCard, Share2, Languages, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check, Menu } from 'lucide-react';
 
 export default function Profile({ initData, userProfile, error }: { initData: string, userProfile: any, error?: string | null }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'inventory' | 'payments'>('profile');
   const [inventory, setInventory] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -109,27 +110,36 @@ export default function Profile({ initData, userProfile, error }: { initData: st
 
   return (
     <div className="container dir-auto">
-      <h1 className="text-xl font-bold mb-4">{t('profile')}</h1>
+      <div className="flex justify-between items-center mb-6 relative">
+        <h1 className="text-xl font-bold m-0">{t('profile')}</h1>
+        <button 
+          className="secondary p-2 rounded-lg flex items-center justify-center"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          <Menu size={24} />
+        </button>
 
-      <div className="flex gap-2 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6 overflow-x-auto hide-scrollbar" style={{ flexWrap: "nowrap" }}>
-        <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'profile' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
-          onClick={() => setActiveTab('profile')}
-        >
-          <div className="flex items-center justify-center gap-2"><Settings size={16} />{t('tab_settings', 'Settings')}</div>
-        </button>
-        <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'inventory' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
-          onClick={() => setActiveTab('inventory')}
-        >
-          <div className="flex items-center justify-center gap-2"><Package size={16} />{t('tab_inventory', 'Inventory')}</div>
-        </button>
-        <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
-          onClick={() => setActiveTab('payments')}
-        >
-          <div className="flex items-center justify-center gap-2"><CreditCard size={16} />{t('tab_payments', 'Payments')}</div>
-        </button>
+        {isMenuOpen && (
+          <div className="absolute top-12 right-0 bg-[var(--card-bg-color)] border border-[var(--border-color)] shadow-xl rounded-xl p-2 flex flex-col gap-1 w-48 z-50">
+            {[
+              { id: 'profile', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
+              { id: 'inventory', icon: <Package size={18} />, label: t('tab_inventory', 'Inventory') as string },
+              { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string }
+            ].map(tab => (
+              <button 
+                key={tab.id}
+                className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg transition-all ${activeTab === tab.id ? 'bg-[var(--primary-color)] text-white' : 'bg-transparent text-[var(--text-color)] hover:bg-[var(--secondary-bg-color)]'}`}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  setIsMenuOpen(false);
+                }}
+              >
+                {tab.icon}
+                <span className="font-semibold">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       
       {activeTab === 'profile' && (
