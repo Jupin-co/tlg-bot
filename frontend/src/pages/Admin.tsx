@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { loadTranslations } from '../i18n';
-import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save } from 'lucide-react';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -359,42 +359,42 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       <h1 className="text-xl font-bold mb-4">{t('admin')}</h1>
       
       {/* Scrollable / Wrap Tab Navigation */}
-      <div className="grid grid-cols-3 sm:flex sm:flex-row gap-2 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6">
+      <div className="flex overflow-x-auto hide-scrollbar gap-2 bg-[var(--secondary-bg-color)] p-2 rounded-full mb-8 shadow-sm">
         <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'catalog' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap flex-shrink-0 py-2 px-4 text-sm font-semibold rounded-full transition-all flex items-center justify-center gap-2 ${activeTab === 'catalog' ? 'bg-[var(--card-bg-color)] shadow-md text-[var(--text-color)]' : 'bg-transparent text-[var(--hint-color)] hover:text-[var(--text-color)]'}`}
           onClick={() => setActiveTab('catalog')}
         >
-          <div className="flex items-center justify-center gap-2"><ShoppingBag size={16} />{t('tab_catalog', 'Catalog')}</div>
+          <ShoppingBag size={18} /> <span>{t('tab_catalog', 'Catalog') as string}</span>
         </button>
         <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'settings' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap flex-shrink-0 py-2 px-4 text-sm font-semibold rounded-full transition-all flex items-center justify-center gap-2 ${activeTab === 'settings' ? 'bg-[var(--card-bg-color)] shadow-md text-[var(--text-color)]' : 'bg-transparent text-[var(--hint-color)] hover:text-[var(--text-color)]'}`}
           onClick={() => setActiveTab('settings')}
         >
-          <div className="flex items-center justify-center gap-2"><Settings size={16} />{t('tab_settings', 'Settings')}</div>
+          <Settings size={18} /> <span>{t('tab_settings', 'Settings') as string}</span>
         </button>
         <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap flex-shrink-0 py-2 px-4 text-sm font-semibold rounded-full transition-all flex items-center justify-center gap-2 ${activeTab === 'payments' ? 'bg-[var(--card-bg-color)] shadow-md text-[var(--text-color)]' : 'bg-transparent text-[var(--hint-color)] hover:text-[var(--text-color)]'}`}
           onClick={() => setActiveTab('payments')}
         >
-          <div className="flex items-center justify-center gap-2"><CreditCard size={16} />{t('tab_payments', 'Payments')}</div>
+          <CreditCard size={18} /> <span>{t('tab_payments', 'Payments') as string}</span>
         </button>
         <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'invoices' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap flex-shrink-0 py-2 px-4 text-sm font-semibold rounded-full transition-all flex items-center justify-center gap-2 ${activeTab === 'invoices' ? 'bg-[var(--card-bg-color)] shadow-md text-[var(--text-color)]' : 'bg-transparent text-[var(--hint-color)] hover:text-[var(--text-color)]'}`}
           onClick={() => setActiveTab('invoices')}
         >
-          <div className="flex items-center justify-center gap-2"><CreditCard size={16} />{t('tab_invoices', 'Invoices')}</div>
+          <CreditCard size={18} /> <span>{t('tab_invoices', 'Invoices') as string}</span>
         </button>
         <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'users' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap flex-shrink-0 py-2 px-4 text-sm font-semibold rounded-full transition-all flex items-center justify-center gap-2 ${activeTab === 'users' ? 'bg-[var(--card-bg-color)] shadow-md text-[var(--text-color)]' : 'bg-transparent text-[var(--hint-color)] hover:text-[var(--text-color)]'}`}
           onClick={() => setActiveTab('users')}
         >
-          <div className="flex items-center justify-center gap-2"><Users size={16} />{t('tab_users', 'Users')}</div>
+          <Users size={18} /> <span>{t('tab_users', 'Users') as string}</span>
         </button>
         <button 
-          className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'messages' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
+          className={`whitespace-nowrap flex-shrink-0 py-2 px-4 text-sm font-semibold rounded-full transition-all flex items-center justify-center gap-2 ${activeTab === 'messages' ? 'bg-[var(--card-bg-color)] shadow-md text-[var(--text-color)]' : 'bg-transparent text-[var(--hint-color)] hover:text-[var(--text-color)]'}`}
           onClick={() => setActiveTab('messages')}
         >
-          <div className="flex items-center justify-center gap-2"><MessageSquare size={16} />{t('tab_messages', 'Messages')}</div>
+          <MessageSquare size={18} /> <span>{t('tab_messages', 'Messages') as string}</span>
         </button>
       </div>
 
@@ -418,7 +418,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                   <div className="flex-1">
                     <h4 className="font-bold text-lg m-0">{p.name}</h4>
                     <p className="font-bold text-[var(--link-color)] mt-1">{formatNumber(p.base_price)} {p.currency}</p>
-                    <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? 'Unlimited' : formatNumber(p.stock)} | Days: {formatNumber(p.duration_days)}</p>
+                    <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? t('lbl_unlimited', 'Unlimited') as string : formatNumber(p.stock)} | {t('lbl_days', 'Days') as string}: {formatNumber(p.duration_days)}</p>
                     <div className="flex gap-2 mt-3">
                       <button onClick={() => openEditProduct(p)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
                         <Edit size={12} /> {t("btn_edit", "Edit")}
@@ -555,20 +555,20 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           ) : (
             invoices.map(inv => (
               <div key={inv.id} className="card">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold m-0">{t('invoice_hash', 'Invoice #')}{inv.id}</h3>
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex-1 overflow-hidden">
+                    <h3 className="font-bold m-0 truncate">{t('invoice_hash', 'Invoice #') as string}{inv.id}</h3>
                     <p className="text-sm text-hint mt-1">
                       {inv.first_name} {inv.username ? `(@${inv.username})` : ''}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <span className={`text-xs font-bold px-2 py-1 rounded ${
+                  <div className="text-right flex-shrink-0">
+                    <span className={`text-[10px] sm:text-xs font-bold px-2 py-1 rounded whitespace-nowrap ${
                       inv.status === 'APPROVED' ? 'bg-[rgba(52,199,89,0.1)] text-success' :
                       inv.status === 'REJECTED' || inv.status === 'EXPIRED' ? 'bg-[rgba(255,59,48,0.1)] text-danger' :
                       'bg-[rgba(255,149,0,0.1)] text-[var(--hint-color)]'
                     }`}>
-                      {inv.status}
+                      {t('status_' + inv.status.toLowerCase(), inv.status) as string}
                     </span>
                     <p className="font-bold mt-2">{formatNumber(inv.total_price)} {t(inv.currency.toLowerCase(), inv.currency) as string}</p>
                   </div>
@@ -582,7 +582,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       {activeTab === 'messages' && (
         <div className="flex flex-col gap-4 mt-4">
           <div className="card">
-             <h3 className="font-bold mb-3">Active Languages</h3>
+             <h3 className="font-bold mb-3">{t('title_active_languages', 'Active Languages') as string}</h3>
              <div className="flex flex-col gap-2">
                {languages.map(l => (
                  <div key={l.code} className="flex justify-between items-center py-2 border-b border-[var(--border-color)] last:border-0">
@@ -607,14 +607,14 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           </div>
 
           <div className="mt-4">
-              <h3 className="font-bold mb-3">Existing Messages</h3>
+              <h3 className="font-bold mb-3">{t('title_existing_messages', 'Existing Messages') as string}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   {Object.keys(translations.en || {}).map(key => {
                      const isEditing = editingTranslation === key;
                      return (
                        <div key={key} className="card flex flex-col gap-3">
-                         <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-2 mb-2">
-                           <span className="text-sm font-mono font-bold text-[var(--link-color)]">{key}</span>
+                         <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-2 mb-2 gap-2">
+                           <span className="text-sm font-mono font-bold text-[var(--link-color)] truncate flex-1" title={key} dir="ltr">{key}</span>
                            <div>
                              {isEditing ? (
                                <button onClick={async () => {
@@ -650,7 +650,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       {activeTab === 'payments' && (
         <div className="flex flex-col gap-4 mt-4">
           <h3 className="font-bold m-0">{t("title_pending_receipts", "Pending Receipts")}</h3>
-          {payments.length === 0 && <p className="text-hint">No pending payments.</p>}
+          {payments.length === 0 && <p className="text-hint">{t('msg_no_pending_payments', 'No pending payments.') as string}</p>}
           {payments.map(p => {
             let receiptKey = '';
             try {
@@ -741,7 +741,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                       <div className="text-xs text-hint num-fix">{new Date(l.created_at).toLocaleString()}</div>
                     </div>
                     {l.metadata && (
-                      <pre className="text-xs font-mono text-[var(--text-color)] opacity-80 overflow-x-auto p-2 bg-[rgba(0,0,0,0.1)] rounded mt-2 whitespace-pre-wrap break-words" style={{maxHeight: '150px'}}>
+                      <pre className="text-xs font-mono text-[var(--text-color)] opacity-80 overflow-auto p-2 bg-[rgba(0,0,0,0.1)] rounded mt-2 whitespace-pre-wrap break-words" style={{maxHeight: '150px', overflowY: 'auto'}}>
                         {(() => {
                           try {
                             const parsed = JSON.parse(l.metadata);
@@ -762,11 +762,11 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     
       {fullScreenImg && (
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={() => setFullScreenImg(null)}>
-          <div className="relative max-w-full max-h-full">
-            <button className="absolute -top-10 right-0 bg-transparent text-white border-none p-2" onClick={() => setFullScreenImg(null)}>
-              <X size={32} />
+          <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+            <button className="absolute top-4 left-4 z-50 bg-[rgba(0,0,0,0.5)] text-white border-none py-2 px-4 rounded-full flex items-center gap-2" onClick={() => setFullScreenImg(null)}>
+              <ArrowLeft size={20} /> <span className="font-bold">{t('btn_back', 'Back') as string}</span>
             </button>
-            <img src={fullScreenImg} alt="Receipt Fullscreen" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+            <img src={fullScreenImg} alt="Receipt Fullscreen" className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
           </div>
         </div>
       )}
