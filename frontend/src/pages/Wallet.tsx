@@ -53,8 +53,8 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
       });
       const data = await res.json();
       if (data.error) alert(data.error);
-      else if (data.invoiceId) {
-        navigate('/invoice/' + data.invoiceId);
+      else if (data.invoice_id || data.invoiceId) {
+        navigate('/invoice/' + (data.invoice_id || data.invoiceId));
       }
     } catch (e) {
       console.error(e);
