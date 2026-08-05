@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../i18n';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CreditCard, UploadCloud, ReceiptText } from 'lucide-react';
 
@@ -133,7 +134,7 @@ export default function InvoiceView({ initData }: { initData: string }) {
           </div>
           <div className="flex justify-between items-center py-2">
             <span className="text-hint font-semibold text-sm uppercase">{t('lbl_total', 'Total')}</span>
-            <span className="font-bold text-lg num-fix">{invoice.total_price.toLocaleString()} {t(invoice.currency.toLowerCase(), invoice.currency)}</span>
+            <span className="font-bold text-lg num-fix">{formatNumber(invoice.total_price)} {t(invoice.currency.toLowerCase(), invoice.currency) as string}</span>
           </div>
         </div>
         

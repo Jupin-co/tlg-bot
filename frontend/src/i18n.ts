@@ -122,3 +122,11 @@ export const loadTranslations = async () => {
 };
 
 export default i18n;
+
+export const formatNumber = (val: number | string | undefined | null) => {
+  if (val === undefined || val === null) return '';
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (isNaN(num)) return val.toString();
+  const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US';
+  return new Intl.NumberFormat(locale).format(num);
+};

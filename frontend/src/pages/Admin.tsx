@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../i18n';
 import { loadTranslations } from '../i18n';
 import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save } from 'lucide-react';
 
@@ -357,7 +358,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       <h1 className="text-xl font-bold mb-4">{t('admin')}</h1>
       
       {/* Scrollable / Wrap Tab Navigation */}
-      <div className="flex gap-2 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6 overflow-x-auto hide-scrollbar" style={{ flexWrap: "nowrap" }}>
+      <div className="grid grid-cols-3 sm:flex sm:flex-row gap-2 bg-[var(--secondary-bg-color)] p-1 rounded-xl mb-6">
         <button 
           className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'catalog' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('catalog')}
@@ -415,8 +416,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 <div key={p.id} className="card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" style={{ marginBottom: 0 }}>
                   <div className="flex-1">
                     <h4 className="font-bold text-lg m-0">{p.name}</h4>
-                    <p className="font-bold text-[var(--link-color)] mt-1 num-fix">{p.base_price.toLocaleString()} {p.currency}</p>
-                    <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? 'Unlimited' : p.stock} | Days: {p.duration_days}</p>
+                    <p className="font-bold text-[var(--link-color)] mt-1 num-fix">{formatNumber(p.base_price)} {p.currency}</p>
+                    <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? 'Unlimited' : formatNumber(p.stock)} | Days: {formatNumber(p.duration_days)}</p>
                     <div className="flex gap-2 mt-3">
                       <button onClick={() => openEditProduct(p)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
                         <Edit size={12} /> {t("btn_edit", "Edit")}
@@ -518,7 +519,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                         <div className="text-xs text-hint flex gap-2 items-center">
                           <span>{t("lbl_bought_by", "Bought by:")} <strong>{c.buyer_name}</strong></span>
                           <span>•</span>
-                          <span>Invoice #{c.invoice_id}</span>
+                          <span>Invoice #{formatNumber(c.invoice_id)}</span>
                         </div>
                       )}
                     </div>
@@ -568,7 +569,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                     }`}>
                       {inv.status}
                     </span>
-                    <p className="font-bold mt-2 num-fix">{inv.total_price.toLocaleString()} {t(inv.currency.toLowerCase(), inv.currency)}</p>
+                    <p className="font-bold mt-2 num-fix">{formatNumber(inv.total_price)} {t(inv.currency.toLowerCase(), inv.currency) as string}</p>
                   </div>
                 </div>
               </div>
@@ -658,11 +659,11 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             return (
               <div key={p.id} className="card relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[var(--hint-color)]"></div>
-                <h4 className="font-bold m-0">{t('lbl_invoice_id', 'Invoice ID')} <span className="num-fix text-sm">#{p.invoice_id}</span></h4>
+                <h4 className="font-bold m-0">{t('lbl_invoice_id', 'Invoice ID')} <span className="num-fix text-sm">#{formatNumber(p.invoice_id)}</span></h4>
                 <p className="text-sm text-hint mt-1">{t('lbl_user', 'User')}: {p.first_name} (@{p.username})</p>
                 <div className="flex justify-between items-center my-3 border-y border-[var(--border-color)] py-2">
                   <span className="text-sm font-medium">{t('lbl_amount', 'Amount')}</span>
-                  <span className="font-bold text-lg num-fix">{p.total_price.toLocaleString()} {p.currency}</span>
+                  <span className="font-bold text-lg num-fix">{formatNumber(p.total_price)} {p.currency}</span>
                 </div>
                 {receiptKey && (
                   <div className="bg-[var(--secondary-bg-color)] p-2 rounded-xl text-center mb-4">
@@ -688,14 +689,14 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             <h3 className="font-bold mb-3">{t("tab_users", "Users Management")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   {users.map(u => (
-                    <div key={u.telegram_id} className="card flex flex-col gap-3 relative overflow-hidden">
+                    <div key={formatNumber(u.telegram_id)} className="card flex flex-col gap-3 relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-1 h-full bg-[var(--primary-color)]"></div>
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="font-bold text-lg">{u.first_name}</div>
                           <div className="text-xs text-hint mt-1">@{u.username || '?'}</div>
                         </div>
-                        <span className="text-xs font-mono text-hint num-fix">{t('lbl_id', 'ID')}: {u.telegram_id}</span>
+                        <span className="text-xs font-mono text-hint num-fix">{t('lbl_id', 'ID')}: {formatNumber(u.telegram_id)}</span>
                       </div>
                       <div className="flex justify-between items-center mt-2 border-t border-[var(--border-color)] pt-3">
                         <div className="flex items-center gap-2">

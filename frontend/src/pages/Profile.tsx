@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../i18n';
 import { useNavigate } from 'react-router-dom';
 import { User, Settings, Wallet, CreditCard, Share2, Languages, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check } from 'lucide-react';
 
@@ -73,7 +74,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
     if (diff <= 0) return 'Expired';
     const d = Math.floor(diff / (1000 * 60 * 60 * 24));
     const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    return `${d} ${t('lbl_days', 'days')} ${h} ${t('lbl_hours', 'hours')}`;
+    return `${formatNumber(d)} ${t('lbl_days', 'days')} ${formatNumber(h)} ${t('lbl_hours', 'hours')}`;
   };
 
   if (!initData) {
@@ -282,7 +283,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                 
                 <div className="flex justify-between items-center border-t border-[var(--border-color)] pt-3">
                   <span className="text-sm text-hint font-medium">{t('lbl_amount', 'Amount')}</span>
-                  <span className="font-bold num-fix text-lg">{p.total_price.toLocaleString()} {t(p.currency.toLowerCase(), p.currency)}</span>
+                  <span className="font-bold num-fix text-lg">{formatNumber(p.total_price)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
                 </div>
               </div>
             ))
