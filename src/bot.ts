@@ -80,7 +80,7 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
     const existingProfile = await ctx.env.DB.prepare("SELECT phone_number FROM profiles WHERE user_id = ?").bind(profile.telegram_id).first();
     const hasPhoneNumber = !!(existingProfile && existingProfile.phone_number);
 
-    const lang = profile.language_code;
+    const lang = profile.language_code || 'fa';
 
     if (!hasPhoneNumber) {
       const msg = await getBotMessage(ctx.env.DB, 'bot_request_contact', lang, "Please share your phone number to continue.");
@@ -98,6 +98,12 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
       const msg = await getBotMessage(ctx.env.DB, 'bot_welcome', lang, "Welcome! Click below to open the app.");
       const btn = await getBotMessage(ctx.env.DB, 'bot_btn_open_app', lang, "📱 Open App");
       await ctx.reply(msg, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: btn, web_app: { url: webAppUrl } }]
+          ]
+        }
+      });
         reply_markup: {
           inline_keyboard: [
             [{ text: btn, web_app: { url: webAppUrl } }]
