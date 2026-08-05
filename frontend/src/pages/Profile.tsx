@@ -144,36 +144,37 @@ export default function Profile({ initData, userProfile, error }: { initData: st
       </div>
       
       {/* Sliding Drawer Navigation */}
-      <div className={`fixed inset-0 z-40 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
-        <div className={`absolute top-0 bottom-0 ${document.body.dir === 'rtl' ? 'left-0 right-auto translate-x-full' : 'right-0 left-auto translate-x-full'} w-72 bg-[var(--card-bg-color)] shadow-2xl flex flex-col transition-transform duration-300 ${isMenuOpen ? '!translate-x-0' : ''}`}>
-          <div className="flex justify-between items-center p-4 border-b border-[var(--border-color)]">
-            <h2 className="font-bold text-lg m-0">{t('profile')}</h2>
-            <button className="p-2 rounded-full secondary border-none" onClick={() => setIsMenuOpen(false)}>
-              <X size={20} />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
-            {[
-              { id: 'profile', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
-              { id: 'inventory', icon: <Package size={18} />, label: t('tab_inventory', 'Inventory') as string },
-              { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string }
-            ].map(tab => (
-              <button 
-                key={tab.id}
-                className={`flex items-center gap-4 w-full text-left px-4 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--primary-color)] text-white font-semibold shadow-md' : 'bg-transparent text-[var(--text-color)] hover:bg-[var(--secondary-bg-color)]'}`}
-                onClick={() => {
-                  setActiveTab(tab.id as any);
-                  setIsMenuOpen(false);
-                }}
-              >
-                <span className={`${activeTab === tab.id ? 'opacity-100 scale-110' : 'opacity-70'} transition-transform`}>{tab.icon}</span>
-                <span className="text-base">{tab.label}</span>
+      {isMenuOpen && (
+        <div className="drawer-overlay" onClick={() => setIsMenuOpen(false)}>
+          <div className={`drawer-content ${document.body.dir === 'rtl' ? 'rtl' : 'ltr'}`} onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-header">
+              <h2 className="m-0">{t('profile')}</h2>
+              <button className="close-btn" onClick={() => setIsMenuOpen(false)}>
+                <X size={20} />
               </button>
-            ))}
+            </div>
+            <div className="drawer-body">
+              {[
+                { id: 'profile', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
+                { id: 'inventory', icon: <Package size={18} />, label: t('tab_inventory', 'Inventory') as string },
+                { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string }
+              ].map(tab => (
+                <button 
+                  key={tab.id}
+                  className={`drawer-item ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveTab(tab.id as any);
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  <span className={`${activeTab === tab.id ? 'opacity-100 scale-110' : 'opacity-70'} transition-transform`}>{tab.icon}</span>
+                  <span className="text-base">{tab.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
       
       {activeTab === 'profile' && (
         <div className="flex flex-col gap-4">
