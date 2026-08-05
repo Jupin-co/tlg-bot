@@ -212,6 +212,17 @@ export default function InvoiceView({ initData }: { initData: string }) {
                   {t('lbl_upload_receipt_instruction', 'Confirm Payment')}
                 </h4>
 
+            {invoice.type !== 'WALLET_CHARGE' && (
+              <button 
+                className="secondary w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 mb-3 bg-[#4F46E5] text-white hover:bg-[#4338CA] transition-colors border-none cursor-pointer shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                onClick={handleWalletPay}
+                disabled={walletPaying}
+              >
+                <CreditCard size={20} />
+                {walletPaying ? '...' : t('btn_pay_wallet', 'Pay with Wallet')}
+              </button>
+            )}
+
                 <input
                   type="file"
                   accept="image/*"
