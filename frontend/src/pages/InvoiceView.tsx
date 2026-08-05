@@ -98,7 +98,7 @@ export default function InvoiceView({ initData }: { initData: string }) {
       const data = await res.json();
       if (data.success) {
         alert(t('msg_upload_success', 'Receipt uploaded successfully! Awaiting approval.'));
-        window.location.reload();
+        navigate('/profile');
       } else {
         alert(data.error || t('msg_upload_failed', 'Upload failed'));
       }

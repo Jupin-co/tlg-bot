@@ -419,10 +419,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                     <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? 'Unlimited' : p.stock} | Days: {p.duration_days}</p>
                     <div className="flex gap-2 mt-3">
                       <button onClick={() => openEditProduct(p)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
-                        <Edit size={12} /> Edit
+                        <Edit size={12} /> {t("btn_edit", "Edit")}
                       </button>
                       <button onClick={() => openManageCodes(p.id)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
-                        <Key size={12} /> Codes
+                        <Key size={12} /> {t("btn_codes", "Codes")}
                       </button>
                     </div>
                   </div>
@@ -459,7 +459,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
           <div className="card modal-content w-full max-w-sm max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold m-0">{editProdId ? 'Edit Product' : t('add_product')}</h3>
+              <h3 className="font-bold m-0">{editProdId ? t("title_edit_product", "Edit Product") : t("add_product")}</h3>
               <button onClick={() => setShowProdModal(false)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
             </div>
             <div className="flex flex-col gap-3">
@@ -473,7 +473,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 <input type="number" placeholder={t('placeholder_duration', 'Duration (Days, 0=Lifetime)')} value={newProdDuration} onChange={(e) => setNewProdDuration(e.target.value)} className="flex-1" />
                 {parseInt(newProdDuration || '0') > 0 ? (
                   <div className="flex-1 text-xs text-hint bg-[var(--secondary-bg-color)] p-2 rounded-lg border border-[var(--border-color)]">
-                    Stock is automatically managed by added Codes.
+                    {t("msg_stock_auto", "Stock is automatically managed by added Codes.")}
                   </div>
                 ) : (
                   <input type="number" placeholder={t('placeholder_stock', 'Stock (-1=Unlimited)')} value={newProdStock} onChange={(e) => setNewProdStock(e.target.value)} className="flex-1" />
@@ -493,7 +493,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
           <div className="card modal-content w-full max-w-sm max-h-[80vh] flex flex-col">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-bold m-0">Manage Codes</h3>
+              <h3 className="font-bold m-0">{t("title_manage_codes", "Manage Codes")}</h3>
               <button onClick={() => setManageCodesProductId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
             </div>
             
@@ -511,12 +511,12 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                       <div className="flex items-center gap-3">
                         <strong className="font-mono text-base tracking-wider num-fix truncate">{c.code}</strong>
                         <span className={`text-xs px-2 py-1 rounded font-bold whitespace-nowrap ${c.is_sold ? 'bg-[rgba(255,59,48,0.1)] text-danger' : 'bg-[rgba(52,199,89,0.1)] text-success'}`}>
-                          {c.is_sold ? 'Sold' : 'Available'}
+                          {c.is_sold ? t("lbl_sold", "Sold") : t("lbl_available", "Available")}
                         </span>
                       </div>
                       {c.is_sold && c.buyer_name && (
                         <div className="text-xs text-hint flex gap-2 items-center">
-                          <span>Bought by: <strong>{c.buyer_name}</strong></span>
+                          <span>{t("lbl_bought_by", "Bought by:")} <strong>{c.buyer_name}</strong></span>
                           <span>•</span>
                           <span>Invoice #{c.invoice_id}</span>
                         </div>
@@ -535,7 +535,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       {activeTab === 'settings' && (
         <div className="card mt-4">
-          <h3 className="font-bold mb-2">Payment Settings</h3>
+          <h3 className="font-bold mb-2">{t("title_payment_settings", "Payment Settings")}</h3>
           <p className="text-xs text-hint mb-4">This information is shown to users for manual card transfers.</p>
           <div className="flex flex-col gap-3">
             <input placeholder="Card Holder Name" value={cardHolder} onChange={e => setCardHolder(e.target.value)} />
@@ -595,7 +595,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           </div>
 
           <div className="card">
-            <h3 className="font-bold mb-3">Add/Edit Message</h3>
+            <h3 className="font-bold mb-3">{t("title_add_edit_message", "Add/Edit Message")}</h3>
             <div className="flex flex-col gap-3">
               <input placeholder="Message Key (e.g. welcome_text)" value={newMsgKey} onChange={e => setNewMsgKey(e.target.value)} />
               <input placeholder="English Translation" value={newMsgEn} onChange={e => setNewMsgEn(e.target.value)} />
@@ -655,7 +655,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       {activeTab === 'payments' && (
         <div className="flex flex-col gap-4 mt-4">
-          <h3 className="font-bold m-0">Pending Receipts</h3>
+          <h3 className="font-bold m-0">{t("title_pending_receipts", "Pending Receipts")}</h3>
           {payments.length === 0 && <p className="text-hint">No pending payments.</p>}
           {payments.map(p => {
             let receiptKey = '';
