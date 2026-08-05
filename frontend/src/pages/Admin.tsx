@@ -57,6 +57,21 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [toast, setToast] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
 
   const isAdmin = userProfile?.role === 'ADMIN' || userProfile?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = userProfile?.role === 'SUPER_ADMIN';
+
+  const adminTabs = [
+    { id: 'catalog', icon: <ShoppingBag size={18} />, label: t('tab_catalog', 'Catalog') as string },
+    { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string },
+    { id: 'invoices', icon: <CreditCard size={18} />, label: t('tab_invoices', 'Invoices') as string },
+  ];
+
+  if (isSuperAdmin) {
+    adminTabs.push(
+      { id: 'settings', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
+      { id: 'users', icon: <Users size={18} />, label: t('tab_users', 'Users') as string },
+      { id: 'messages', icon: <MessageSquare size={18} />, label: t('tab_messages', 'Messages') as string }
+    );
+  }
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ msg, type });
@@ -364,38 +379,38 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           <div className="relative">
             <button 
               className="p-2 rounded-full flex items-center justify-center bg-[var(--primary-color)] text-white shadow-md hover:shadow-lg transition-all"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              onClick={() => setIsMenuOpen(true)}
             >
               <Menu size={20} />
             </button>
+          </div>
+        </div>
+      </div>
 
-            {isMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
-                <div className="absolute top-12 right-0 bg-[var(--card-bg-color)]/90 backdrop-blur-xl border border-[var(--border-color)] shadow-2xl rounded-2xl p-2 flex flex-col w-56 z-50 overflow-hidden transform origin-top-right transition-all">
-                  {[
-                    { id: 'catalog', icon: <ShoppingBag size={18} />, label: t('tab_catalog', 'Catalog') as string },
-                    { id: 'settings', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
-                    { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string },
-                    { id: 'invoices', icon: <CreditCard size={18} />, label: t('tab_invoices', 'Invoices') as string },
-                    { id: 'users', icon: <Users size={18} />, label: t('tab_users', 'Users') as string },
-                    { id: 'messages', icon: <MessageSquare size={18} />, label: t('tab_messages', 'Messages') as string }
-                  ].map(tab => (
-                    <button 
-                      key={tab.id}
-                      className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--primary-color)] text-white font-semibold shadow-sm' : 'bg-transparent text-[var(--text-color)] hover:bg-[var(--secondary-bg-color)]'}`}
-                      onClick={() => {
-                        setActiveTab(tab.id as any);
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <span className={`${activeTab === tab.id ? 'opacity-100' : 'opacity-70'}`}>{tab.icon}</span>
-                      <span>{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+      {/* Sliding Drawer Navigation */}
+      <div className={`fixed inset-0 z-40 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
+        <div className={`absolute top-0 bottom-0 ${document.body.dir === 'rtl' ? 'left-0 right-auto translate-x-full' : 'right-0 left-auto translate-x-full'} w-72 bg-[var(--card-bg-color)] shadow-2xl flex flex-col transition-transform duration-300 ${isMenuOpen ? '!translate-x-0' : ''}`}>
+          <div className="flex justify-between items-center p-4 border-b border-[var(--border-color)]">
+            <h2 className="font-bold text-lg m-0">{t('admin')}</h2>
+            <button className="p-2 rounded-full secondary border-none" onClick={() => setIsMenuOpen(false)}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+            {adminTabs.map(tab => (
+              <button 
+                key={tab.id}
+                className={`flex items-center gap-4 w-full text-left px-4 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-[var(--primary-color)] text-white font-semibold shadow-md' : 'bg-transparent text-[var(--text-color)] hover:bg-[var(--secondary-bg-color)]'}`}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <span className={`${activeTab === tab.id ? 'opacity-100 scale-110' : 'opacity-70'} transition-transform`}>{tab.icon}</span>
+                <span className="text-base">{tab.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
