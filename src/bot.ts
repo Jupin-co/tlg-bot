@@ -104,12 +104,6 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
           ]
         }
       });
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: btn, web_app: { url: webAppUrl } }]
-          ]
-        }
-      });
     }
   });
 

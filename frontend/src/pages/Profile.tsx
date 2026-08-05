@@ -88,7 +88,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
     return (
       <div className="container dir-auto flex flex-col items-center justify-center h-full gap-4 text-center">
         <XCircle size={48} className="text-danger" />
-        <h3 className="font-bold text-lg">Error Loading Profile</h3>
+        <h3 className="font-bold text-lg">{t('lbl_error_loading_profile', 'Error Loading Profile')}</h3>
         <p className="text-danger text-sm">{error}</p>
       </div>
     );
@@ -96,7 +96,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
   if (!userProfile) {
     return (
       <div className="container dir-auto flex items-center justify-center h-full">
-        <p className="text-hint font-medium">Loading profile...</p>
+        <p className="text-hint font-medium">{t('lbl_loading_profile', 'Loading profile...')}</p>
       </div>
     );
   }
@@ -142,7 +142,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
             <h3 className="font-bold mb-4">{t('lbl_account_details', 'Account Details')}</h3>
             <div className="flex justify-between items-center py-2 border-b border-[var(--border-color)]">
               <span className="text-hint text-sm">{t('phone_number')}</span>
-              <span className="font-medium num-fix tracking-wider">{userProfile.phone_number || 'Not provided'}</span>
+              <span className="font-medium num-fix tracking-wider">{userProfile.phone_number || t('lbl_not_provided', 'Not provided')}</span>
             </div>
             {!userProfile.phone_number && (
               <button className="secondary w-full mt-4 flex items-center justify-center gap-2" onClick={shareContact}>
