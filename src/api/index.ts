@@ -4,69 +4,6 @@ import { logUsage } from '../core/db';
 
 const api = new Hono<{ Bindings: Env, Variables: { user: any } }>();
 
-// Middleware: Validate Telegram initData
-api.use('*', async (c, next) => {
-  // Public endpoints that don't need initData
-  const path = new URL(c.req.url).pathname;
-  if (path === '/api/translations' || path === '/api/catalog' || path.startsWith('/api/receipt-image')) {
-    return next();
-  }
-
-  const initData = c.req.header('x-telegram-init-data');
-  if (!initData) {
-    return c.json({ error: 'Unauthorized. Missing initData.' }, 401);
-  }
-  
-  // Security note: In a real app, cryptographically validate initData using BOT_TOKEN!
-  try {
-    const params = new URLSearchParams(initData);
-    const userJson = params.get('user');
-    if (userJson) {
-      const user = JSON.parse(decodeURIComponent(userJson));
-      c.set('user', user);
-    }
-  } catch (e) {
-    console.error("Failed to parse initData", e);
-  }
-  
-  await next();
-});
-
-// Middleware: Admin check
-const adminMiddleware = async (c: any, next: any) => {
-  const user = c.get('user');
-  if (!user || !user.id) return c.json({ error: 'Unauthorized' }, 401);
-  
-  const { DB } = c.env;
-  const dbUser = await DB.prepare(`
-    SELECT r.name as role 
-    FROM profiles p 
-    JOIN roles r ON p.role_id = r.id 
-    WHERE p.user_id = ?
-  `).bind(user.id).first();
-  
-  if (!dbUser || (dbUser.role !== 'SUPER_ADMIN' && dbUser.role !== 'ADMIN')) {
-    return c.json({ error: 'Forbidden. Admins only.' }, 403);
-  }
-  await next();
-};
-
-// Endpoint: Fetch User Profile
-api.get('/user', async (c) => {
-  const user = c.get('user');
-  if (!user) return c.json({ error: 'No user data' }, 400);
-
-  const dbUser = await c.env.DB.prepare(`
-    SELECT 
-      u.*, 
-      p.phone_number,
-      r.name as role,
-import { Hono } from 'hono';
-import { Env } from '../bot';
-import { logUsage } from '../core/db';
-
-const api = new Hono<{ Bindings: Env, Variables: { user: any } }>();
-
 function isValidIranianNationalCode(code: string): boolean {
   if (!/^\d{10}$/.test(code)) return false;
   const check = parseInt(code[9]);
