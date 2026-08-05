@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { loadTranslations } from '../i18n';
-import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu } from 'lucide-react';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -576,8 +576,11 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex-1 overflow-hidden">
                     <h3 className="font-bold m-0 truncate">{t('invoice_hash', 'Invoice #') as string}{inv.id}</h3>
-                    <p className="text-sm text-hint mt-1">
+                    <p className="text-sm font-medium mt-1">
                       {inv.first_name} {inv.username ? `(@${inv.username})` : ''}
+                    </p>
+                    <p className="text-xs text-hint mt-1 flex items-center gap-1">
+                      <Clock size={12} /> {new Date(inv.created_at).toLocaleString()}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -591,6 +594,15 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                     <p className="font-bold mt-2">{formatNumber(inv.total_price)} {t(inv.currency.toLowerCase(), inv.currency) as string}</p>
                   </div>
                 </div>
+                {inv.reviewed_at && (
+                  <div className="mt-3 pt-3 border-t border-[var(--border-color)] flex justify-between items-center text-xs text-hint">
+                    <div className="flex items-center gap-1">
+                      <User size={12} /> 
+                      {t('lbl_reviewed_by', 'Reviewed by')}: {inv.reviewer_name || inv.reviewer_username || t('admin', 'Admin')}
+                    </div>
+                    <div>{new Date(inv.reviewed_at).toLocaleString()}</div>
+                  </div>
+                )}
               </div>
             ))
           )}
