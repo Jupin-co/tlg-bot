@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, Wallet, CreditCard, Share2, Languages, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check } from 'lucide-react';
+import { User, Settings, Package, CreditCard, Share2, Languages, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Copy, Check } from 'lucide-react';
 
 export default function Profile({ initData, userProfile, error }: { initData: string, userProfile: any, error?: string | null }) {
   const { t, i18n } = useTranslation();
@@ -16,6 +16,11 @@ export default function Profile({ initData, userProfile, error }: { initData: st
     navigator.clipboard.writeText(text);
     setCopiedCodeId(id);
     setTimeout(() => setCopiedCodeId(null), 2000);
+    fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+      body: JSON.stringify({ action: 'COPY_REDEEM_CODE', details: { inventory_id: id } })
+    }).catch(console.error);
   };
 
   useEffect(() => {
@@ -117,7 +122,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
           className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'inventory' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
           onClick={() => setActiveTab('inventory')}
         >
-          <div className="flex items-center justify-center gap-2"><Wallet size={16} />{t('tab_inventory', 'Inventory')}</div>
+          <div className="flex items-center justify-center gap-2"><Package size={16} />{t('tab_inventory', 'Inventory')}</div>
         </button>
         <button 
           className={`whitespace-nowrap py-2 px-3 text-sm flex-1 text-center flex justify-center font-medium rounded-lg transition-all ${activeTab === 'payments' ? 'bg-[var(--bg-color)] shadow-sm text-text-color' : 'bg-transparent text-hint border-transparent'}`}
@@ -202,7 +207,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
         <div className="flex flex-col gap-4">
           {inventory.length === 0 ? (
             <div className="card text-center py-10 text-hint flex flex-col items-center gap-3">
-              <Wallet size={48} opacity={0.3} />
+              <Package size={48} opacity={0.3} />
               <p>{t('msg_no_products', 'You have no active products.')}</p>
             </div>
           ) : (
@@ -234,7 +239,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                   <div className="flex items-center gap-2 text-sm font-medium border-t border-[var(--border-color)] pt-3">
                     <Clock size={16} className="text-[var(--button-color)]" />
                     <span>{t('lbl_time_left', 'Time left:')}</span>
-                    <span className="text-[var(--button-color)] num-fix">{calculateTimeLeft(item.access_ends_at)}</span>
+                    <span className="text-[var(--button-color)]">{calculateTimeLeft(item.access_ends_at)}</span>
                   </div>
                 )}
               </div>
@@ -265,8 +270,8 @@ export default function Profile({ initData, userProfile, error }: { initData: st
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-bold m-0">{t('lbl_invoice', 'Invoice')} <span className="num-fix text-sm">#{p.invoice_id}</span></h4>
-                    <p className="text-xs text-hint mt-1 num-fix">{new Date(p.created_at).toLocaleString()}</p>
+                    <h4 className="font-bold m-0">{t('lbl_invoice', 'Invoice')} <span className="text-sm">#{formatNumber(p.invoice_id)}</span></h4>
+                    <p className="text-xs text-hint mt-1">{new Date(p.created_at).toLocaleString()}</p>
                   </div>
                   <div className={`px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1
                     ${p.status === 'APPROVED' ? 'bg-[rgba(52,199,89,0.1)] text-success' : 
@@ -283,7 +288,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                 
                 <div className="flex justify-between items-center border-t border-[var(--border-color)] pt-3">
                   <span className="text-sm text-hint font-medium">{t('lbl_amount', 'Amount')}</span>
-                  <span className="font-bold num-fix text-lg">{formatNumber(p.total_price)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
+                  <span className="font-bold text-lg">{formatNumber(p.total_price)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
                 </div>
               </div>
             ))

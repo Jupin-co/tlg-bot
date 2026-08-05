@@ -16,6 +16,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   // User Logs State
   const [userLogs, setUserLogs] = useState<any[]>([]);
   const [viewLogsUserId, setViewLogsUserId] = useState<number | null>(null);
+  const [fullScreenImg, setFullScreenImg] = useState<string | null>(null);
   
   // Catalog States
   const [showCatModal, setShowCatModal] = useState(false);
@@ -416,7 +417,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 <div key={p.id} className="card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" style={{ marginBottom: 0 }}>
                   <div className="flex-1">
                     <h4 className="font-bold text-lg m-0">{p.name}</h4>
-                    <p className="font-bold text-[var(--link-color)] mt-1 num-fix">{formatNumber(p.base_price)} {p.currency}</p>
+                    <p className="font-bold text-[var(--link-color)] mt-1">{formatNumber(p.base_price)} {p.currency}</p>
                     <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? 'Unlimited' : formatNumber(p.stock)} | Days: {formatNumber(p.duration_days)}</p>
                     <div className="flex gap-2 mt-3">
                       <button onClick={() => openEditProduct(p)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
@@ -569,7 +570,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                     }`}>
                       {inv.status}
                     </span>
-                    <p className="font-bold mt-2 num-fix">{formatNumber(inv.total_price)} {t(inv.currency.toLowerCase(), inv.currency) as string}</p>
+                    <p className="font-bold mt-2">{formatNumber(inv.total_price)} {t(inv.currency.toLowerCase(), inv.currency) as string}</p>
                   </div>
                 </div>
               </div>
@@ -663,14 +664,15 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 <p className="text-sm text-hint mt-1">{t('lbl_user', 'User')}: {p.first_name} (@{p.username})</p>
                 <div className="flex justify-between items-center my-3 border-y border-[var(--border-color)] py-2">
                   <span className="text-sm font-medium">{t('lbl_amount', 'Amount')}</span>
-                  <span className="font-bold text-lg num-fix">{formatNumber(p.total_price)} {p.currency}</span>
+                  <span className="font-bold text-lg">{formatNumber(p.total_price)} {p.currency}</span>
                 </div>
                 {receiptKey && (
                   <div className="bg-[var(--secondary-bg-color)] p-2 rounded-xl text-center mb-4">
                     <img 
                       src={`/api/receipt-image/${receiptKey.split('/').pop()}`} 
                       alt="Receipt" 
-                      className="max-w-full max-h-[300px] object-contain rounded-lg mx-auto"
+                      className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setFullScreenImg(`/api/receipt-image/${receiptKey.split('/').pop()}`)}
                     />
                   </div>
                 )}
@@ -738,7 +740,18 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                       <div className="font-bold text-sm">{l.action}</div>
                       <div className="text-xs text-hint num-fix">{new Date(l.created_at).toLocaleString()}</div>
                     </div>
-                    {l.metadata && <div className="text-xs font-mono text-[var(--text-color)] opacity-80 break-all p-2 bg-[rgba(0,0,0,0.1)] rounded mt-2">{l.metadata}</div>}
+                    {l.metadata && (
+                      <pre className="text-xs font-mono text-[var(--text-color)] opacity-80 overflow-x-auto p-2 bg-[rgba(0,0,0,0.1)] rounded mt-2 whitespace-pre-wrap break-words" style={{maxHeight: '150px'}}>
+                        {(() => {
+                          try {
+                            const parsed = JSON.parse(l.metadata);
+                            return JSON.stringify(parsed, null, 2);
+                          } catch {
+                            return l.metadata;
+                          }
+                        })()}
+                      </pre>
+                    )}
                   </div>
                 ))}
               </div>
@@ -746,7 +759,17 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           </div>
         </div>
       )}
+    
+      {fullScreenImg && (
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={() => setFullScreenImg(null)}>
+          <div className="relative max-w-full max-h-full">
+            <button className="absolute -top-10 right-0 bg-transparent text-white border-none p-2" onClick={() => setFullScreenImg(null)}>
+              <X size={32} />
+            </button>
+            <img src={fullScreenImg} alt="Receipt Fullscreen" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" onClick={(e) => e.stopPropagation()} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

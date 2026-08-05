@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { formatNumber } from '../i18n';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 
 export default function Basket({ initData }: { initData: string }) {
@@ -42,6 +43,11 @@ export default function Basket({ initData }: { initData: string }) {
 
   const handleCheckout = async () => {
     try {
+      fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+        body: JSON.stringify({ action: 'CHECKOUT_START', details: { total_items: basket.length } })
+      }).catch(console.error);
       const res = await fetch('/api/invoice/create', { method: 'POST', headers: { 'x-telegram-init-data': initData } });
       const data = await res.json();
       if (data.success) {
@@ -74,16 +80,16 @@ export default function Basket({ initData }: { initData: string }) {
       ) : (
         <div className="flex flex-col gap-4">
           {basket.map(item => (
-            <div key={item.basket_id} className="card flex justify-between items-center py-4" style={{ marginBottom: 0 }}>
+            <div key={item.basket_id} className="card flex justify-between items-center">
               <div className="flex-1">
                 <h4 className="font-bold text-lg mb-1" style={{ margin: 0 }}>{item.name}</h4>
                 <div className="text-hint font-medium">
-                  <span className="num-fix">{item.base_price.toLocaleString()} {t(item.currency.toLowerCase(), item.currency)}</span>
+                  <span>{formatNumber(item.base_price)} {t(item.currency.toLowerCase(), item.currency)}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-xl p-1 border border-[var(--border-color)]">
                 <button className="secondary p-2 rounded-lg border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => handleDecrement(item.basket_id)}>-</button>
-                <span className="font-bold num-fix min-w-[20px] text-center">{item.quantity}</span>
+                <span className="font-bold min-w-[20px] text-center">{formatNumber(item.quantity)}</span>
                 <button className="secondary p-2 rounded-lg border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => handleAdd(item.product_id)} disabled={item.stock !== -1 && item.quantity >= item.stock} style={{ opacity: (item.stock !== -1 && item.quantity >= item.stock) ? 0.5 : 1 }}>+</button>
               </div>
             </div>
@@ -92,8 +98,7 @@ export default function Basket({ initData }: { initData: string }) {
           <div className="card mt-4 bg-[var(--secondary-bg-color)] border-none">
             <div className="flex justify-between items-center mb-6">
               <span className="text-hint font-semibold uppercase">{t('lbl_total', 'Total')}</span>
-              <span className="font-bold text-2xl num-fix text-[var(--button-color)]">
-                {basket.reduce((a, b) => a + b.base_price * b.quantity, 0).toLocaleString()} {basket[0]?.currency}
+              <span className="font-bold text-2xl text-[var(--button-color)]">s*{formatNumber(basket.reduce((a, b) => a + b.base_price * b.quantity, 0))} {basket[0]?.currency}
               </span>
             </div>
             <button className="w-full justify-center" style={{ padding: '16px', fontSize: '18px' }} onClick={handleCheckout}>

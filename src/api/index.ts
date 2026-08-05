@@ -97,8 +97,9 @@ api.post('/log', async (c) => {
   const user = c.get('user');
   if (!user) return c.json({ error: 'No user data' }, 400);
   
-  const { action, metadata } = await c.req.json();
-  await logUsage(c.env.DB, user.id, action, metadata);
+  const { action, metadata, details } = await c.req.json();
+  const finalMeta = details || metadata;
+  await logUsage(c.env.DB, user.id, action, finalMeta);
   return c.json({ success: true });
 });
 
