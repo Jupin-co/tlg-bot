@@ -786,7 +786,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 {receiptKey && (
                   <div className="mb-4">
                     <p className="text-sm font-semibold mb-2">{t('lbl_receipt', 'Receipt')}</p>
-                    <div style={{ width: '30%', maxWidth: '120px', aspectRatio: '1/1', overflow: 'hidden', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ width: '25%', aspectRatio: '1/1', overflow: 'hidden', borderRadius: '8px', border: '2px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
                       <img 
                         src={`/api/receipt-image/${receiptKey.split('/').pop()}`} 
                         alt="Receipt Thumbnail" 
@@ -851,7 +851,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               <h3 className="font-bold m-0">User Logs <span className="text-sm font-normal text-hint">({viewLogsUserId})</span></h3>
               <button onClick={() => setViewLogsUserId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', marginTop: '8px', paddingRight: '8px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', marginTop: '8px', paddingRight: '8px', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', minHeight: '0' }}>
               {userLogs.length === 0 && <p className="text-hint">No logs found.</p>}
               <div className="flex flex-col gap-2">
                 {userLogs.map(l => (
@@ -886,7 +886,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             <button className="absolute top-4 left-4 z-50 bg-[rgba(0,0,0,0.5)] text-white border-none py-2 px-4 rounded-full flex items-center gap-2" style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 10000, background: 'rgba(0,0,0,0.5)', border: 'none', padding: '8px 16px', borderRadius: '20px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setFullScreenImg(null)}>
               <ArrowLeft size={20} /> <span className="font-bold">{t('btn_back', 'Back') as string}</span>
             </button>
-            <img src={fullScreenImg} alt="Receipt Fullscreen" style={{ width: '90%', maxWidth: '500px', maxHeight: '85%', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()} />
+            <img src={fullScreenImg} alt="Receipt Fullscreen" style={{ width: '95%', maxHeight: '90%', objectFit: 'contain', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }} onClick={(e) => e.stopPropagation()} />
           </div>
         </div>
       )}

@@ -54,6 +54,21 @@ function Navigation({ userProfile }: { userProfile: any }) {
   );
 }
 
+
+const PageLogger = ({ initData }: { initData: string }) => {
+  const location = useLocation();
+  useEffect(() => {
+    if (initData && location.pathname !== '/') { // Landing logs itself
+      fetch('/api/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+        body: JSON.stringify({ action: 'PAGE_VIEW', details: { path: location.pathname } })
+      }).catch(() => {});
+    }
+  }, [location.pathname, initData]);
+  return null;
+};
+
 function App() {
   const { i18n } = useTranslation();
   const [initData, setInitData] = useState<string>('');
@@ -119,6 +134,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <PageLogger initData={initData} />
       <div className="container" dir={i18n.language === 'fa' ? 'rtl' : 'ltr'}>
         <Routes>
           <Route path="/" element={<Landing initData={initData} />} />

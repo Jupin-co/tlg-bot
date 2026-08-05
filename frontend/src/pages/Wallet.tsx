@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,16 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
   const [dob, setDob] = useState('');
   const [chargeAmount, setChargeAmount] = useState('');
   const [walletLoading, setWalletLoading] = useState(false);
+  const [localProfile, setLocalProfile] = useState(userProfile);
+
+  useEffect(() => {
+    fetch('/api/user', {
+      headers: {
+        'x-telegram-init-data': initData
+      }
+    }).then(r => r.json()).then(d => { if (d.user) setLocalProfile(d.user); });
+  }, [initData]);
+
 
   const handleWalletVerify = async () => {
     if (!nationalCode || !dob) {
@@ -43,6 +53,7 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
     if (!chargeAmount || parseInt(chargeAmount) <= 0) return;
     setWalletLoading(true);
     try {
+      fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData }, body: JSON.stringify({ action: 'CHARGE_WALLET', details: { amount: parseInt(chargeAmount) } }) }).catch(()=>{});
       const res = await fetch('/api/wallet/charge', {
         method: 'POST',
         headers: {
@@ -90,7 +101,7 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
             <div>
               <p className="text-sm font-medium opacity-80 mb-1">{t('lbl_wallet_balance', 'Balance')}</p>
               <h2 className="text-3xl font-black m-0 num-fix tracking-wider">
-                {formatNumber(userProfile.wallet_balance || 0)} <span className="text-sm font-medium opacity-80">{t('irt', 'IRT')}</span>
+                {formatNumber(localProfile.wallet_balance || 0)} <span className="text-sm font-medium opacity-80">{t('irt', 'IRT')}</span>
               </h2>
             </div>
             <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm">
@@ -101,19 +112,19 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
           <div className="mt-6 flex items-center gap-2 relative z-10">
             <span className="text-xs uppercase tracking-widest font-semibold opacity-70">{t('lbl_wallet_status', 'Status')}</span>
             <span className={`text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 bg-white/20 backdrop-blur-sm \${
-              userProfile.wallet_status === 'VERIFIED' ? 'text-[#34C759]' :
-              userProfile.wallet_status === 'PENDING' ? 'text-[#FF9500]' : 'text-[#FF3B30]'
+              localProfile.wallet_status === 'VERIFIED' ? 'text-[#34C759]' :
+              localProfile.wallet_status === 'PENDING' ? 'text-[#FF9500]' : 'text-[#FF3B30]'
             }`}>
-              {userProfile.wallet_status === 'VERIFIED' && <CheckCircle2 size={12} />}
-              {userProfile.wallet_status === 'PENDING' && <Clock size={12} />}
-              {(!userProfile.wallet_status || userProfile.wallet_status === 'UNVERIFIED' || userProfile.wallet_status === 'REJECTED') && <XCircle size={12} />}
-              {t('wallet_status_' + (userProfile.wallet_status || 'UNVERIFIED').toLowerCase(), userProfile.wallet_status || 'UNVERIFIED') as string}
+              {localProfile.wallet_status === 'VERIFIED' && <CheckCircle2 size={12} />}
+              {localProfile.wallet_status === 'PENDING' && <Clock size={12} />}
+              {(!localProfile.wallet_status || localProfile.wallet_status === 'UNVERIFIED' || localProfile.wallet_status === 'REJECTED') && <XCircle size={12} />}
+              {t('wallet_status_' + (localProfile.wallet_status || 'UNVERIFIED').toLowerCase(), localProfile.wallet_status || 'UNVERIFIED') as string}
             </span>
           </div>
         </div>
 
         {/* Action Area */}
-        {(!userProfile.wallet_status || userProfile.wallet_status === 'UNVERIFIED' || userProfile.wallet_status === 'REJECTED') && (
+        {(!localProfile.wallet_status || localProfile.wallet_status === 'UNVERIFIED' || localProfile.wallet_status === 'REJECTED') && (
           <div className="card">
             <h3 className="font-bold mb-3">{t('lbl_wallet_status', 'Status')}</h3>
             <p className="text-sm text-hint mb-4 leading-relaxed">{t('msg_wallet_kyc_info', 'To use the wallet, you must verify your identity.')}</p>
@@ -149,7 +160,7 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
           </div>
         )}
 
-        {userProfile.wallet_status === 'PENDING' && (
+        {localProfile.wallet_status === 'PENDING' && (
           <div className="card flex flex-col items-center justify-center py-10 text-center gap-3">
             <div className="w-16 h-16 bg-[#FF9500]/10 text-[#FF9500] rounded-full flex items-center justify-center mb-2">
               <Clock size={32} />
@@ -159,7 +170,7 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
           </div>
         )}
 
-        {userProfile.wallet_status === 'VERIFIED' && (
+        {localProfile.wallet_status === 'VERIFIED' && (
           <div className="card">
             <div className="flex items-center gap-2 mb-4">
               <CreditCard size={18} className="text-[var(--primary-color)]" />

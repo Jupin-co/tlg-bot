@@ -8,6 +8,16 @@ export default function Profile({ initData, userProfile, error }: { initData: st
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [localProfile, setLocalProfile] = useState(userProfile);
+
+  useEffect(() => {
+    fetch('/api/user', {
+      headers: {
+        'x-telegram-init-data': initData
+      }
+    }).then(r => r.json()).then(d => { if (d.user) setLocalProfile(d.user); });
+  }, [initData]);
+
   const [activeTab, setActiveTab] = useState<'profile' | 'payments'>('profile');
   const [payments, setPayments] = useState<any[]>([]);
 
@@ -160,8 +170,8 @@ export default function Profile({ initData, userProfile, error }: { initData: st
               <User size={32} />
             </div>
             <div>
-              <h3 className="font-bold text-lg m-0">{userProfile.first_name} {userProfile.last_name}</h3>
-              <p className="text-hint text-sm num-fix mt-1">@{userProfile.username}</p>
+              <h3 className="font-bold text-lg m-0">{localProfile.first_name} {localProfile.last_name}</h3>
+              <p className="text-hint text-sm num-fix mt-1">@{localProfile.username}</p>
             </div>
           </div>
 
@@ -169,9 +179,9 @@ export default function Profile({ initData, userProfile, error }: { initData: st
             <h3 className="font-bold mb-4">{t('lbl_account_details', 'Account Details')}</h3>
             <div className="flex justify-between items-center py-2 border-b border-[var(--border-color)]">
               <span className="text-hint text-sm">{t('phone_number')}</span>
-              <span className="font-medium num-fix tracking-wider">{userProfile.phone_number || t('lbl_not_provided', 'Not provided')}</span>
+              <span className="font-medium num-fix tracking-wider">{localProfile.phone_number || t('lbl_not_provided', 'Not provided')}</span>
             </div>
-            {!userProfile.phone_number && (
+            {!localProfile.phone_number && (
               <button className="secondary w-full mt-4 flex items-center justify-center gap-2" onClick={shareContact}>
                 <Share2 size={18} /> {t('share_contact')}
               </button>
