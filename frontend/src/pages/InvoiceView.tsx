@@ -70,6 +70,29 @@ export default function InvoiceView({ initData }: { initData: string }) {
     });
   };
 
+  
+  const [walletPaying, setWalletPaying] = useState(false);
+
+  const handleWalletPay = async () => {
+    setWalletPaying(true);
+    try {
+      const res = await fetch(`/api/invoice/${id}/pay-with-wallet`, {
+        method: 'POST',
+        headers: { 'x-telegram-init-data': initData }
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert(t('msg_payment_success', 'Payment successful!'));
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setWalletPaying(false);
+  };
+
   const handleFileUpload = async (e: any) => {
     const file = e.target.files[0];
     if (!file) return;

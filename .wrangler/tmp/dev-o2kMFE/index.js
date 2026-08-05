@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/bundle-ocxsZh/checked-fetch.js
+// .wrangler/tmp/bundle-7al7ud/checked-fetch.js
 var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
@@ -7286,9 +7286,14 @@ function initBot(env) {
     await saveUser(ctx.env.DB, profile);
     await logUsage(ctx.env.DB, profile.telegram_id, "START_BOT", { start_param: profile.start_param });
     const webAppUrl = "https://tlg-bot.m-pazouki-dev.workers.dev/";
-    const existingProfile = await ctx.env.DB.prepare("SELECT phone_number FROM profiles WHERE user_id = ?").bind(profile.telegram_id).first();
+    const existingProfile = await ctx.env.DB.prepare(`
+      SELECT p.phone_number, l.code as lang_code 
+      FROM profiles p 
+      LEFT JOIN languages l ON p.language_id = l.id 
+      WHERE p.user_id = ?
+    `).bind(profile.telegram_id).first();
     const hasPhoneNumber = !!(existingProfile && existingProfile.phone_number);
-    const lang = profile.language_code;
+    const lang = existingProfile?.lang_code || "fa";
     if (!hasPhoneNumber) {
       const msg = await getBotMessage(ctx.env.DB, "bot_request_contact", lang, "Please share your phone number to continue.");
       const btn = await getBotMessage(ctx.env.DB, "bot_btn_share_contact", lang, "\u{1F4DE} Share Phone Number");
@@ -7309,15 +7314,6 @@ function initBot(env) {
           inline_keyboard: [
             [{ text: btn, web_app: { url: webAppUrl } }]
           ]
-        }
-      });
-      await ctx.reply("Or use the menu button below:", {
-        reply_markup: {
-          keyboard: [
-            [{ text: btn, web_app: { url: webAppUrl } }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
         }
       });
     }
@@ -7344,15 +7340,6 @@ function initBot(env) {
             ]
           }
         });
-        await ctx.reply("Or use the menu button below:", {
-          reply_markup: {
-            keyboard: [
-              [{ text: btn, web_app: { url: webAppUrl } }]
-            ],
-            resize_keyboard: true,
-            is_persistent: true
-          }
-        });
       } else {
         const msg = await getBotMessage(ctx.env.DB, "bot_contact_invalid", lang, "Please share your own contact number.");
         await ctx.reply(msg);
@@ -7373,15 +7360,6 @@ function initBot(env) {
           ]
         }
       });
-      await ctx.reply("Or use the menu button below:", {
-        reply_markup: {
-          keyboard: [
-            [{ text: btn, web_app: { url: webAppUrl } }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
-        }
-      });
     }
   });
   return bot;
@@ -7391,6 +7369,10 @@ __name(initBot, "initBot");
 // src/api/index.ts
 var api = new Hono2();
 api.use("*", async (c, next) => {
+  const path = new URL(c.req.url).pathname;
+  if (path === "/api/translations" || path === "/api/catalog" || path.startsWith("/api/receipt-image")) {
+    return next();
+  }
   const initData = c.req.header("x-telegram-init-data");
   if (!initData) {
     return c.json({ error: "Unauthorized. Missing initData." }, 401);
@@ -7457,8 +7439,9 @@ api.post("/user/preferences", async (c) => {
 api.post("/log", async (c) => {
   const user = c.get("user");
   if (!user) return c.json({ error: "No user data" }, 400);
-  const { action, metadata } = await c.req.json();
-  await logUsage(c.env.DB, user.id, action, metadata);
+  const { action, metadata, details } = await c.req.json();
+  const finalMeta = details || metadata;
+  await logUsage(c.env.DB, user.id, action, finalMeta);
   return c.json({ success: true });
 });
 api.get("/catalog", async (c) => {
@@ -7497,7 +7480,7 @@ api.post("/admin/products", adminMiddleware, async (c) => {
 });
 api.get("/admin/products/:id/codes", adminMiddleware, async (c) => {
   const productId = c.req.param("id");
-  const { results } = await c.env.DB.prepare("SELECT * FROM redeem_codes WHERE product_id = ? ORDER BY id DESC").bind(productId).all();
+  const { results } = await c.env.DB.prepare("SELECT c.*, p.invoice_id FROM redeem_codes c LEFT JOIN payments p ON c.payment_id = p.id WHERE c.product_id = ? ORDER BY c.id DESC").bind(productId).all();
   return c.json({ codes: results });
 });
 api.post("/admin/products/:id/codes", adminMiddleware, async (c) => {
@@ -7535,6 +7518,16 @@ api.post("/admin/settings", adminMiddleware, async (c) => {
   await c.env.DB.prepare("UPDATE settings SET value = ? WHERE key = 'card_number'").bind(card_number || "").run();
   return c.json({ success: true });
 });
+api.get("/admin/invoices", adminMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare(`
+    SELECT i.*, u.username, u.first_name, ru.first_name as reviewer_name, ru.username as reviewer_username
+      FROM invoices i
+      JOIN users u ON i.user_id = u.telegram_id
+      LEFT JOIN users ru ON i.reviewed_by = ru.telegram_id
+      ORDER BY i.created_at DESC
+  `).all();
+  return c.json({ invoices: results });
+});
 api.get("/admin/payments", adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT p.*, i.user_id, i.total_price, i.currency, u.username, u.first_name 
@@ -7546,6 +7539,7 @@ api.get("/admin/payments", adminMiddleware, async (c) => {
   return c.json({ payments: results });
 });
 api.post("/admin/payments/:id/approve", adminMiddleware, async (c) => {
+  const adminUser = c.get("user");
   const paymentId = c.req.param("id");
   const pRecord = await c.env.DB.prepare("SELECT invoice_id FROM payments WHERE id = ?").bind(paymentId).first();
   if (!pRecord) return c.json({ error: "Payment not found" }, 404);
@@ -7560,17 +7554,17 @@ api.post("/admin/payments/:id/approve", adminMiddleware, async (c) => {
   for (const item of items) {
     if (item.snapshot_duration_days > 0) {
       for (let q = 0; q < item.quantity; q++) {
-        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND is_sold = 0 LIMIT 1").bind(item.product_id).first();
+        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id).first();
         if (!code) {
           return c.json({ error: `Not enough redeem codes available for ${item.snapshot_name}.` }, 400);
         }
-        await c.env.DB.prepare("UPDATE redeem_codes SET is_sold = 1 WHERE id = ?").bind(code.id).run();
+        await c.env.DB.prepare("UPDATE redeem_codes SET is_sold = 3 WHERE id = ?").bind(code.id).run();
         codeAssignments.push({ codeId: code.id, codeStr: code.code, item });
       }
     }
   }
   await c.env.DB.prepare("UPDATE payments SET status = 'APPROVED' WHERE id = ?").bind(paymentId).run();
-  await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED' WHERE id = ?").bind(invoiceId).run();
+  await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?").bind(adminUser.id, invoiceId).run();
   for (const item of items) {
     for (let q = 0; q < item.quantity; q++) {
       const startsAt = /* @__PURE__ */ new Date();
@@ -7580,7 +7574,7 @@ api.post("/admin/payments/:id/approve", adminMiddleware, async (c) => {
         const assignObj = codeAssignments.find((ca) => ca.item.product_id === item.product_id);
         if (assignObj) {
           assignedCode = assignObj.codeStr;
-          await c.env.DB.prepare("UPDATE redeem_codes SET payment_id = ? WHERE id = ?").bind(paymentId, assignObj.codeId).run();
+          await c.env.DB.prepare("UPDATE redeem_codes SET payment_id = ?, is_sold = 1 WHERE id = ?").bind(paymentId, assignObj.codeId).run();
           codeAssignments.splice(codeAssignments.indexOf(assignObj), 1);
           const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(item.product_id).first();
           if (count) {
@@ -7605,11 +7599,12 @@ api.post("/admin/payments/:id/approve", adminMiddleware, async (c) => {
   return c.json({ success: true });
 });
 api.post("/admin/payments/:id/reject", adminMiddleware, async (c) => {
+  const adminUser = c.get("user");
   const paymentId = c.req.param("id");
   await c.env.DB.prepare("UPDATE payments SET status = 'REJECTED' WHERE id = ?").bind(paymentId).run();
   const pRecord = await c.env.DB.prepare("SELECT invoice_id FROM payments WHERE id = ?").bind(paymentId).first();
   if (pRecord) {
-    await c.env.DB.prepare("UPDATE invoices SET status = 'REJECTED' WHERE id = ?").bind(pRecord.invoice_id).run();
+    await c.env.DB.prepare("UPDATE invoices SET status = 'REJECTED', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?").bind(adminUser.id, pRecord.invoice_id).run();
   }
   return c.json({ success: true });
 });
@@ -7633,6 +7628,20 @@ api.post("/basket/add", async (c) => {
     await c.env.DB.prepare("UPDATE baskets SET quantity = quantity + 1 WHERE id = ?").bind(exists.id).run();
   } else {
     await c.env.DB.prepare("INSERT INTO baskets (user_id, product_id) VALUES (?, ?)").bind(user.id, product_id).run();
+  }
+  return c.json({ success: true });
+});
+api.post("/basket/decrement", async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "No user data" }, 400);
+  const { basket_id } = await c.req.json();
+  const exists = await c.env.DB.prepare("SELECT id, quantity FROM baskets WHERE id = ? AND user_id = ?").bind(basket_id, user.id).first();
+  if (exists) {
+    if (exists.quantity > 1) {
+      await c.env.DB.prepare("UPDATE baskets SET quantity = quantity - 1 WHERE id = ?").bind(basket_id).run();
+    } else {
+      await c.env.DB.prepare("DELETE FROM baskets WHERE id = ?").bind(basket_id).run();
+    }
   }
   return c.json({ success: true });
 });
@@ -7718,7 +7727,7 @@ api.post("/invoice/:id/receipt", async (c) => {
   await c.env.DB.prepare("UPDATE invoices SET status = 'PENDING_APPROVAL' WHERE id = ?").bind(invoiceId).run();
   return c.json({ success: true });
 });
-api.get("/receipt-image/:key", adminMiddleware, async (c) => {
+api.get("/receipt-image/:key", async (c) => {
   const key = c.req.param("key");
   const fullKey = `receipts/${key}`;
   const object = await c.env.RECEIPTS_BUCKET.get(fullKey);
@@ -7789,6 +7798,48 @@ api.post("/admin/languages", adminMiddleware, async (c) => {
   const { code, is_active } = await c.req.json();
   await c.env.DB.prepare("UPDATE languages SET is_active = ? WHERE code = ?").bind(is_active ? 1 : 0, code).run();
   return c.json({ success: true });
+});
+api.get("/admin/migrate", async (c) => {
+  try {
+    await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN national_code TEXT;`).run();
+    await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN date_of_birth TEXT;`).run();
+    await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN wallet_status TEXT DEFAULT 'UNVERIFIED';`).run();
+    await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN wallet_balance INTEGER DEFAULT 0;`).run();
+    await c.env.DB.prepare(`ALTER TABLE invoices ADD COLUMN type TEXT DEFAULT 'PRODUCT_PURCHASE';`).run();
+    return c.json({ success: true });
+  } catch (e) {
+    return c.json({ error: e.message });
+  }
+});
+api.get("/admin/users", adminMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare(`
+    SELECT u.telegram_id, u.username, u.first_name, u.last_name, u.created_at, p.phone_number, r.id as role_id, r.name as role
+    FROM users u
+    JOIN profiles p ON u.telegram_id = p.user_id
+    JOIN roles r ON p.role_id = r.id
+    ORDER BY u.created_at DESC
+  `).all();
+  return c.json({ users: results });
+});
+api.post("/admin/users/:id/role", adminMiddleware, async (c) => {
+  const reqUser = c.get("user");
+  const dbUser = await c.env.DB.prepare(`
+    SELECT r.name as role FROM profiles p JOIN roles r ON p.role_id = r.id WHERE p.user_id = ?
+  `).bind(reqUser.id).first();
+  if (!dbUser || dbUser.role !== "SUPER_ADMIN") {
+    return c.json({ error: "Forbidden. Only Super Admins can change roles." }, 403);
+  }
+  const userId = c.req.param("id");
+  const { role_id } = await c.req.json();
+  await c.env.DB.prepare("UPDATE profiles SET role_id = ? WHERE user_id = ?").bind(role_id, userId).run();
+  return c.json({ success: true });
+});
+api.get("/admin/users/:id/logs", adminMiddleware, async (c) => {
+  const userId = c.req.param("id");
+  const { results } = await c.env.DB.prepare(`
+    SELECT * FROM user_usage_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 100
+  `).bind(userId).all();
+  return c.json({ logs: results });
 });
 var api_default = api;
 
@@ -7877,7 +7928,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-ocxsZh/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-7al7ud/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -7909,7 +7960,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-ocxsZh/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-7al7ud/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

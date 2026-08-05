@@ -11,6 +11,62 @@ export default function Profile({ initData, userProfile, error }: { initData: st
   const [activeTab, setActiveTab] = useState<'profile' | 'payments'>('profile');
   const [payments, setPayments] = useState<any[]>([]);
 
+  const [nationalCode, setNationalCode] = useState('');
+  const [dob, setDob] = useState('');
+  const [chargeAmount, setChargeAmount] = useState('');
+  const [walletLoading, setWalletLoading] = useState(false);
+
+  const handleWalletVerify = async () => {
+    if (!nationalCode || !dob) {
+      alert(t('msg_fill_fields', 'Please fill all fields'));
+      return;
+    }
+    setWalletLoading(true);
+    try {
+      const res = await fetch('/api/wallet/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-telegram-init-data': initData
+        },
+        body: JSON.stringify({ national_code: nationalCode, date_of_birth: dob })
+      });
+      const data = await res.json();
+      if (data.error) alert(data.error);
+      else {
+        alert(t('msg_kyc_submitted', 'Verification submitted! Pending admin approval.'));
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setWalletLoading(false);
+  };
+
+  const handleWalletCharge = async () => {
+    if (!chargeAmount || parseInt(chargeAmount) <= 0) return;
+    setWalletLoading(true);
+    try {
+      const res = await fetch('/api/wallet/charge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-telegram-init-data': initData
+        },
+        body: JSON.stringify({ amount: parseInt(chargeAmount), currency: 'IRT' })
+      });
+      const data = await res.json();
+      if (data.error) alert(data.error);
+      else {
+        navigate(`/invoice/${data.invoice_id}`);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setWalletLoading(false);
+  };
+
+
   useEffect(() => {
     if (!initData) return;
     if (activeTab === 'payments') {

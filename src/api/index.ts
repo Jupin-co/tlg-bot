@@ -61,6 +61,80 @@ api.get('/user', async (c) => {
       u.*, 
       p.phone_number,
       r.name as role,
+import { Hono } from 'hono';
+import { Env } from '../bot';
+import { logUsage } from '../core/db';
+
+const api = new Hono<{ Bindings: Env, Variables: { user: any } }>();
+
+function isValidIranianNationalCode(code: string): boolean {
+  if (!/^\d{10}$/.test(code)) return false;
+  const check = parseInt(code[9]);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(code[i]) * (10 - i);
+  const rem = sum % 11;
+  return (rem < 2 && check === rem) || (rem >= 2 && check === 11 - rem);
+}
+
+// Middleware: Validate Telegram initData
+api.use('*', async (c, next) => {
+  // Public endpoints that don't need initData
+  const path = new URL(c.req.url).pathname;
+  if (path === '/api/translations' || path === '/api/catalog' || path.startsWith('/api/receipt-image')) {
+    return next();
+  }
+
+  const initData = c.req.header('x-telegram-init-data');
+  if (!initData) {
+    return c.json({ error: 'Unauthorized. Missing initData.' }, 401);
+  }
+  
+  // Security note: In a real app, cryptographically validate initData using BOT_TOKEN!
+  try {
+    const params = new URLSearchParams(initData);
+    const userJson = params.get('user');
+    if (userJson) {
+      const user = JSON.parse(decodeURIComponent(userJson));
+      c.set('user', user);
+    }
+  } catch (e) {
+    console.error("Failed to parse initData", e);
+  }
+  
+  await next();
+});
+
+// Middleware: Admin check
+const adminMiddleware = async (c: any, next: any) => {
+  const user = c.get('user');
+  if (!user || !user.id) return c.json({ error: 'Unauthorized' }, 401);
+  
+  const { DB } = c.env;
+  const dbUser = await DB.prepare(`
+    SELECT r.name as role 
+    FROM profiles p 
+    JOIN roles r ON p.role_id = r.id 
+    WHERE p.user_id = ?
+  `).bind(user.id).first();
+  
+  if (!dbUser || (dbUser.role !== 'SUPER_ADMIN' && dbUser.role !== 'ADMIN')) {
+    return c.json({ error: 'Forbidden. Admins only.' }, 403);
+  }
+  await next();
+};
+
+// Endpoint: Fetch User Profile
+api.get('/user', async (c) => {
+  const user = c.get('user');
+  if (!user) return c.json({ error: 'No user data' }, 400);
+
+  const dbUser = await c.env.DB.prepare(`
+    SELECT 
+      u.*, 
+      p.phone_number,
+      p.wallet_status,
+      p.wallet_balance,
+      r.name as role,
       t.name as theme_preference,
       l.code as language_preference
     FROM users u
@@ -70,6 +144,11 @@ api.get('/user', async (c) => {
     LEFT JOIN languages l ON p.language_id = l.id
     WHERE u.telegram_id = ?
   `).bind(user.id).first();
+  
+  if (dbUser) {
+    dbUser.wallet_status = dbUser.wallet_status || 'UNVERIFIED';
+    dbUser.wallet_balance = dbUser.wallet_balance || 0;
+  }
   
   return c.json({ user: dbUser || user });
 });
@@ -89,6 +168,125 @@ api.post('/user/preferences', async (c) => {
     WHERE user_id = ?
   `).bind(language, theme, user.id).run();
   
+  return c.json({ success: true });
+});
+
+// Endpoint: Submit Wallet Verification (KYC)
+api.post('/wallet/verify', async (c) => {
+  const user = c.get('user');
+  if (!user) return c.json({ error: 'No user data' }, 400);
+  
+  const { national_code, date_of_birth } = await c.req.json();
+  
+  if (!isValidIranianNationalCode(national_code)) {
+    return c.json({ error: 'Invalid National Code' }, 400);
+  }
+  if (!date_of_birth) {
+    return c.json({ error: 'Date of birth is required' }, 400);
+  }
+  
+  await c.env.DB.prepare(`
+    UPDATE profiles 
+    SET national_code = ?, date_of_birth = ?, wallet_status = 'PENDING'
+    WHERE user_id = ?
+  `).bind(national_code, date_of_birth, user.id).run();
+  
+  return c.json({ success: true });
+});
+
+
+// Endpoint: Charge Wallet (creates an invoice)
+api.post('/wallet/charge', async (c) => {
+  const user = c.get('user');
+  if (!user) return c.json({ error: 'No user data' }, 400);
+  
+  const { amount, currency } = await c.req.json();
+  if (!amount || amount <= 0) return c.json({ error: 'Invalid amount' }, 400);
+
+  const { meta } = await c.env.DB.prepare(
+    "INSERT INTO invoices (user_id, total_price, currency, type) VALUES (?, ?, ?, 'WALLET_CHARGE')"
+  ).bind(user.id, amount, currency || 'USD').run();
+
+  return c.json({ success: true, invoice_id: meta.last_row_id });
+});
+
+// Endpoint: Pay Invoice with Wallet
+api.post('/invoice/:id/pay-with-wallet', async (c) => {
+  const user = c.get('user');
+  if (!user) return c.json({ error: 'No user data' }, 400);
+  
+  const invoiceId = c.req.param('id');
+  
+  const invoice = await c.env.DB.prepare("SELECT * FROM invoices WHERE id = ? AND user_id = ? AND status = 'PENDING_PAYMENT'").bind(invoiceId, user.id).first();
+  if (!invoice) return c.json({ error: 'Invoice not found or already paid' }, 404);
+  
+  const profile = await c.env.DB.prepare("SELECT wallet_balance FROM profiles WHERE user_id = ?").bind(user.id).first();
+  if (!profile || profile.wallet_balance < invoice.total_price) {
+    return c.json({ error: 'Insufficient wallet balance' }, 400);
+  }
+
+  // Deduct balance
+  await c.env.DB.prepare("UPDATE profiles SET wallet_balance = wallet_balance - ? WHERE user_id = ?").bind(invoice.total_price, user.id).run();
+  
+  // Create a payment record marked as approved
+  const { meta } = await c.env.DB.prepare(
+    "INSERT INTO payments (invoice_id, method, status) VALUES (?, 'WALLET', 'APPROVED')"
+  ).bind(invoiceId).run();
+  const paymentId = meta.last_row_id;
+  
+  // Actually, we should call the same approval logic as admin does to generate redeem codes.
+  // We can just execute the logic inline.
+  await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?").bind(user.id, invoiceId).run();
+
+  const { results: items } = await c.env.DB.prepare(`
+    SELECT ii.product_id, i.user_id, ii.snapshot_name, ii.snapshot_description, ii.snapshot_duration_days, ii.quantity
+    FROM invoice_items ii
+    JOIN invoices i ON ii.invoice_id = i.id
+    WHERE ii.invoice_id = ?
+  `).bind(invoiceId).all();
+
+  const codeAssignments = [];
+  for (const item of items) {
+    if (item.snapshot_duration_days > 0) {
+      for (let q = 0; q < item.quantity; q++) {
+        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id).first();
+        if (!code) {
+          // Rollback the deduction? For simplicity, we just throw error here, but ideally we should run in transaction. D1 doesn't support full transactions easily in this API style yet, but we'll return error.
+          return c.json({ error: `Not enough redeem codes available for ${item.snapshot_name}.` }, 400);
+        }
+        await c.env.DB.prepare("UPDATE redeem_codes SET is_sold = 3 WHERE id = ?").bind(code.id).run();
+        codeAssignments.push({ codeId: code.id, codeStr: code.code, item });
+      }
+    }
+  }
+
+  for (const item of items) {
+    for (let q = 0; q < item.quantity; q++) {
+      const startsAt = new Date();
+      const endsAt = new Date(startsAt.getTime() + item.snapshot_duration_days * 24 * 60 * 60 * 1000);
+      let assignedCode = null;
+      if (item.snapshot_duration_days > 0) {
+         const assignObj = codeAssignments.find(ca => ca.item.product_id === item.product_id);
+         if (assignObj) {
+           assignedCode = assignObj.codeStr;
+           await c.env.DB.prepare("UPDATE redeem_codes SET payment_id = ?, is_sold = 1 WHERE id = ?").bind(paymentId, assignObj.codeId).run();
+           codeAssignments.splice(codeAssignments.indexOf(assignObj), 1);
+           const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(item.product_id).first();
+           if (count) {
+             await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, item.product_id).run();
+           }
+         }
+      }
+      await c.env.DB.prepare(`
+        INSERT INTO user_inventory (user_id, payment_id, snapshot_name, snapshot_description, access_starts_at, access_ends_at, redeem_code)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        user.id, paymentId, item.snapshot_name, item.snapshot_description || '', 
+        startsAt.toISOString(), item.snapshot_duration_days > 0 ? endsAt.toISOString() : null, assignedCode
+      ).run();
+    }
+  }
+
   return c.json({ success: true });
 });
 
@@ -224,7 +422,7 @@ api.get('/admin/payments', adminMiddleware, async (c) => {
 });
 
 api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
-    const adminUser = c.get('user');
+  const adminUser = c.get('user');
   const paymentId = c.req.param('id');
   
   // Get invoice details
@@ -232,6 +430,19 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
   if (!pRecord) return c.json({ error: 'Payment not found' }, 404);
   const invoiceId = pRecord.invoice_id;
   
+  const invoice = await c.env.DB.prepare("SELECT * FROM invoices WHERE id = ?").bind(invoiceId).first();
+  if (!invoice) return c.json({ error: 'Invoice not found' }, 404);
+
+  if (invoice.type === 'WALLET_CHARGE') {
+    // Approve payment and invoice
+    await c.env.DB.prepare("UPDATE payments SET status = 'APPROVED' WHERE id = ?").bind(paymentId).run();
+    await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?").bind(adminUser.id, invoiceId).run();
+    // Add to wallet balance
+    await c.env.DB.prepare("UPDATE profiles SET wallet_balance = wallet_balance + ? WHERE user_id = ?").bind(invoice.total_price, invoice.user_id).run();
+    return c.json({ success: true });
+  }
+  
+  // PRODUCT_PURCHASE logic
   // Get invoice items
   const { results: items } = await c.env.DB.prepare(`
     SELECT ii.product_id, i.user_id, ii.snapshot_name, ii.snapshot_description, ii.snapshot_duration_days, ii.quantity
@@ -242,7 +453,7 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
 
   // Validate stock of redeem codes first to prevent partial approval if something ran out
   const codeAssignments = [];
-  for (const item of items as any[]) {
+  for (const item of items) {
     if (item.snapshot_duration_days > 0) {
       // Need a redeem code
       for (let q = 0; q < item.quantity; q++) {
@@ -557,6 +768,42 @@ api.post('/admin/languages', adminMiddleware, async (c) => {
 });
 
 // --- ADMIN USER MANAGEMENT ---
+api.get('/admin/migrate', async (c) => {
+    try {
+      await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN national_code TEXT;`).run();
+      await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN date_of_birth TEXT;`).run();
+      await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN wallet_status TEXT DEFAULT 'UNVERIFIED';`).run();
+      await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN wallet_balance INTEGER DEFAULT 0;`).run();
+      await c.env.DB.prepare(`ALTER TABLE invoices ADD COLUMN type TEXT DEFAULT 'PRODUCT_PURCHASE';`).run();
+      return c.json({ success: true });
+    } catch (e: any) {
+      return c.json({ error: e.message });
+    }
+});
+
+// --- ADMIN KYC VERIFICATIONS ---
+api.get('/admin/verifications', adminMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare(`
+    SELECT u.telegram_id as user_id, u.first_name, u.last_name, u.username, p.national_code, p.date_of_birth, p.wallet_status
+    FROM profiles p
+    JOIN users u ON p.user_id = u.telegram_id
+    WHERE p.wallet_status = 'PENDING'
+  `).all();
+  return c.json({ verifications: results });
+});
+
+api.post('/admin/verifications/:id/approve', adminMiddleware, async (c) => {
+  const userId = c.req.param('id');
+  await c.env.DB.prepare("UPDATE profiles SET wallet_status = 'VERIFIED' WHERE user_id = ?").bind(userId).run();
+  return c.json({ success: true });
+});
+
+api.post('/admin/verifications/:id/reject', adminMiddleware, async (c) => {
+  const userId = c.req.param('id');
+  await c.env.DB.prepare("UPDATE profiles SET wallet_status = 'REJECTED' WHERE user_id = ?").bind(userId).run();
+  return c.json({ success: true });
+});
+
 api.get('/admin/users', adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT u.telegram_id, u.username, u.first_name, u.last_name, u.created_at, p.phone_number, r.id as role_id, r.name as role

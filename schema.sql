@@ -64,6 +64,10 @@ CREATE TABLE profiles (
     role_id INTEGER DEFAULT 1,
     theme_id INTEGER DEFAULT 1,
     language_id INTEGER DEFAULT 2,
+    national_code TEXT,
+    date_of_birth TEXT,
+    wallet_status TEXT DEFAULT 'UNVERIFIED',
+    wallet_balance INTEGER DEFAULT 0,
     FOREIGN KEY(user_id) REFERENCES users(telegram_id),
     FOREIGN KEY(role_id) REFERENCES roles(id),
     FOREIGN KEY(theme_id) REFERENCES themes(id),
@@ -143,6 +147,7 @@ CREATE TABLE invoices (
     total_price INTEGER NOT NULL,
     currency TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'PENDING_PAYMENT',
+    type TEXT NOT NULL DEFAULT 'PRODUCT_PURCHASE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(telegram_id)
