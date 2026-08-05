@@ -202,10 +202,11 @@ api.post('/admin/settings', adminMiddleware, async (c) => {
 
 api.get('/admin/invoices', adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(`
-    SELECT i.*, u.username, u.first_name 
-    FROM invoices i
-    JOIN users u ON i.user_id = u.telegram_id
-    ORDER BY i.created_at DESC
+    SELECT i.*, u.username, u.first_name, ru.first_name as reviewer_name, ru.username as reviewer_username
+      FROM invoices i
+      JOIN users u ON i.user_id = u.telegram_id
+      LEFT JOIN users ru ON i.reviewed_by = ru.telegram_id
+      ORDER BY i.created_at DESC
   `).all();
   return c.json({ invoices: results });
 });
@@ -222,6 +223,7 @@ api.get('/admin/payments', adminMiddleware, async (c) => {
 });
 
 api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
+    const adminUser = c.get('user');
   const paymentId = c.req.param('id');
   
   // Get invoice details
@@ -256,7 +258,7 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
 
   // Finalize approval
   await c.env.DB.prepare("UPDATE payments SET status = 'APPROVED' WHERE id = ?").bind(paymentId).run();
-  await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED' WHERE id = ?").bind(invoiceId).run();
+  await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?").bind(adminUser.id, invoiceId).run();
   
   // Create inventory records and update redeem_codes
   for (const item of items as any[]) {
@@ -295,12 +297,13 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
 });
 
 api.post('/admin/payments/:id/reject', adminMiddleware, async (c) => {
+    const adminUser = c.get('user');
   const paymentId = c.req.param('id');
   await c.env.DB.prepare("UPDATE payments SET status = 'REJECTED' WHERE id = ?").bind(paymentId).run();
   
   const pRecord = await c.env.DB.prepare("SELECT invoice_id FROM payments WHERE id = ?").bind(paymentId).first();
   if (pRecord) {
-    await c.env.DB.prepare("UPDATE invoices SET status = 'REJECTED' WHERE id = ?").bind(pRecord.invoice_id).run();
+    await c.env.DB.prepare("UPDATE invoices SET status = 'REJECTED', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?").bind(adminUser.id, pRecord.invoice_id).run();
   }
   
   return c.json({ success: true });

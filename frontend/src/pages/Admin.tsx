@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loadTranslations } from '../i18n';
-import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key } from 'lucide-react';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -536,7 +536,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       {activeTab === 'settings' && (
         <div className="card mt-4">
           <h3 className="font-bold mb-2">{t("title_payment_settings", "Payment Settings")}</h3>
-          <p className="text-xs text-hint mb-4">This information is shown to users for manual card transfers.</p>
+          <p className="text-xs text-hint mb-4">{t('msg_card_transfer_info', 'This information is shown to users for manual card transfers.')}</p>
           <div className="flex flex-col gap-3">
             <input placeholder="Card Holder Name" value={cardHolder} onChange={e => setCardHolder(e.target.value)} />
             <input placeholder="Card Number" value={cardNumber} onChange={e => setCardNumber(e.target.value)} className="num-fix tracking-widest" />
@@ -604,54 +604,46 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             </div>
           </div>
 
-          <div className="card overflow-x-auto">
-            <h3 className="font-bold mb-3">Existing Messages</h3>
-            <div className="overflow-x-auto w-full border border-[var(--border-color)] rounded-xl mt-4 shadow-sm pb-2">
-<table className="w-full text-left border-collapse min-w-[600px]">
-              <thead>
-                <tr className="border-b-2 border-[var(--border-color)]">
-                  <th className="p-2 text-hint font-medium">Key</th>
-                  <th className="p-2 text-hint font-medium">EN</th>
-                  <th className="p-2 text-hint font-medium">FA</th>
-                  <th className="p-2 text-hint font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.keys(translations.en || {}).map(key => {
-                   const isEditing = editingTranslation === key;
-                   return (
-                     <tr key={key} className="border-b border-[var(--border-color)] last:border-0">
-                       <td className="p-2 text-xs font-mono">{key}</td>
-                       <td className="p-2 text-sm">
-                         {isEditing ? <input value={editEnVal} onChange={e => setEditEnVal(e.target.value)} className="w-full p-1" /> : (translations.en?.[key] || '-')}
-                       </td>
-                       <td className="p-2 text-sm">
-                         {isEditing ? <input value={editFaVal} onChange={e => setEditFaVal(e.target.value)} className="w-full p-1" /> : (translations.fa?.[key] || '-')}
-                       </td>
-                       <td className="p-2 text-right">
-                         {isEditing ? (
-                           <button onClick={async () => {
-                             await saveTranslation('en', key, editEnVal);
-                             await saveTranslation('fa', key, editFaVal);
-                             setEditingTranslation(null);
-                           }} className="py-1 px-3 text-xs rounded-lg">Save</button>
-                         ) : (
-                           <button onClick={() => {
-                             setEditingTranslation(key);
-                             setEditEnVal(translations.en?.[key] || '');
-                             setEditFaVal(translations.fa?.[key] || '');
-                           }} className="secondary py-1 px-3 text-xs rounded-lg">{t('edit', 'Edit')}</button>
-                         )}
-                       </td>
-                     </tr>
-                   );
-                })}
-              </tbody>
-            </table>
-</div>
+          <div className="mt-4">
+              <h3 className="font-bold mb-3">Existing Messages</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {Object.keys(translations.en || {}).map(key => {
+                     const isEditing = editingTranslation === key;
+                     return (
+                       <div key={key} className="card flex flex-col gap-3">
+                         <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-2 mb-2">
+                           <span className="text-sm font-mono font-bold text-[var(--link-color)]">{key}</span>
+                           <div>
+                             {isEditing ? (
+                               <button onClick={async () => {
+                                 await saveTranslation('en', key, editEnVal);
+                                 await saveTranslation('fa', key, editFaVal);
+                                 setEditingTranslation(null);
+                               }} className="secondary text-xs py-1 px-3 rounded-lg flex items-center gap-1"><Save size={14}/> {t('btn_save', 'Save')}</button>
+                             ) : (
+                               <button onClick={() => {
+                                 setEditingTranslation(key);
+                                 setEditEnVal(translations.en?.[key] || '');
+                                 setEditFaVal(translations.fa?.[key] || '');
+                               }} className="secondary text-xs py-1 px-3 rounded-lg flex items-center gap-1"><Edit size={14}/> {t('btn_edit', 'Edit')}</button>
+                             )}
+                           </div>
+                         </div>
+                         <div className="flex flex-col gap-1">
+                           <span className="text-xs text-hint">{t('lbl_en', 'EN')}</span>
+                           {isEditing ? <input value={editEnVal} onChange={e => setEditEnVal(e.target.value)} className="w-full p-2 text-sm rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]" /> : <span className="text-sm">{translations.en?.[key] || '-'}</span>}
+                         </div>
+                         <div className="flex flex-col gap-1">
+                           <span className="text-xs text-hint">{t('lbl_fa', 'FA')}</span>
+                           {isEditing ? <input value={editFaVal} onChange={e => setEditFaVal(e.target.value)} className="w-full p-2 text-sm rounded-lg border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]" /> : <span className="text-sm" dir="rtl">{translations.fa?.[key] || '-'}</span>}
+                         </div>
+                       </div>
+                     );
+                  })}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {activeTab === 'payments' && (
         <div className="flex flex-col gap-4 mt-4">
@@ -666,10 +658,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             return (
               <div key={p.id} className="card relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-[var(--hint-color)]"></div>
-                <h4 className="font-bold m-0">Invoice <span className="num-fix text-sm">#{p.invoice_id}</span></h4>
-                <p className="text-sm text-hint mt-1">User: {p.first_name} (@{p.username})</p>
+                <h4 className="font-bold m-0">{t('lbl_invoice_id', 'Invoice ID')} <span className="num-fix text-sm">#{p.invoice_id}</span></h4>
+                <p className="text-sm text-hint mt-1">{t('lbl_user', 'User')}: {p.first_name} (@{p.username})</p>
                 <div className="flex justify-between items-center my-3 border-y border-[var(--border-color)] py-2">
-                  <span className="text-sm font-medium">Amount</span>
+                  <span className="text-sm font-medium">{t('lbl_amount', 'Amount')}</span>
                   <span className="font-bold text-lg num-fix">{p.total_price.toLocaleString()} {p.currency}</span>
                 </div>
                 {receiptKey && (
@@ -692,52 +684,42 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       )}
 
       {activeTab === 'users' && (
-        <div className="mt-4">
-          <h3 className="font-bold mb-3">Users Management</h3>
-          <div className="card overflow-x-auto">
-            <div className="overflow-x-auto w-full border border-[var(--border-color)] rounded-xl mt-4 shadow-sm pb-2">
-<table className="w-full text-left border-collapse min-w-[600px]">
-              <thead>
-                <tr className="border-b-2 border-[var(--border-color)]">
-                  <th className="p-2 text-hint font-medium">ID</th>
-                  <th className="p-2 text-hint font-medium">User</th>
-                  <th className="p-2 text-hint font-medium">Role</th>
-                  <th className="p-2 text-hint font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(u => (
-                  <tr key={u.telegram_id} className="border-b border-[var(--border-color)] last:border-0">
-                    <td className="p-2 text-xs font-mono num-fix">{u.telegram_id}</td>
-                    <td className="p-2 text-sm">
-                      <div className="font-bold">{u.first_name}</div>
-                      <div className="text-xs text-hint">@{u.username || '?'}</div>
-                    </td>
-                    <td className="p-2">
-                      <select 
-                        value={u.role_id} 
-                        onChange={(e) => changeUserRole(u.telegram_id, parseInt(e.target.value))}
-                        disabled={userProfile?.role !== 'SUPER_ADMIN'}
-                        className="p-1 text-sm rounded border border-[var(--border-color)] bg-[var(--bg-color)] text-[var(--text-color)]"
-                      >
-                        <option value={1}>USER</option>
-                        <option value={2}>ADMIN</option>
-                        <option value={3}>SUPER_ADMIN</option>
-                      </select>
-                    </td>
-                    <td className="p-2 text-right">
-                      <button onClick={() => fetchUserLogs(u.telegram_id)} className="secondary py-1 px-3 text-xs rounded-lg flex items-center gap-1 inline-flex">
-                        <Eye size={12} /> Logs
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-</div>
+          <div className="mt-4">
+            <h3 className="font-bold mb-3">{t("tab_users", "Users Management")}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {users.map(u => (
+                    <div key={u.telegram_id} className="card flex flex-col gap-3 relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-[var(--primary-color)]"></div>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-bold text-lg">{u.first_name}</div>
+                          <div className="text-xs text-hint mt-1">@{u.username || '?'}</div>
+                        </div>
+                        <span className="text-xs font-mono text-hint num-fix">{t('lbl_id', 'ID')}: {u.telegram_id}</span>
+                      </div>
+                      <div className="flex justify-between items-center mt-2 border-t border-[var(--border-color)] pt-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-hint">{t('lbl_role', 'Role')}</span>
+                          <select 
+                            value={u.role_id} 
+                            onChange={(e) => changeUserRole(u.telegram_id, parseInt(e.target.value))}
+                            disabled={userProfile?.role !== 'SUPER_ADMIN'}
+                            className="p-1 px-2 text-sm rounded-lg border border-[var(--border-color)] bg-[var(--secondary-bg-color)] text-[var(--text-color)]"
+                          >
+                            <option value={1}>USER</option>
+                            <option value={2}>ADMIN</option>
+                            <option value={3}>SUPER_ADMIN</option>
+                          </select>
+                        </div>
+                        <button onClick={() => fetchUserLogs(u.telegram_id)} className="secondary py-1 px-3 text-xs rounded-lg flex items-center gap-1">
+                          <Eye size={14} /> {t('lbl_actions', 'Actions')}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {viewLogsUserId !== null && (
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
