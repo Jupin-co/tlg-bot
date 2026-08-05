@@ -276,7 +276,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
                     {p.status === 'REJECTED' && <XCircle size={12} />}
                     {p.status === 'PENDING_PAYMENT' && <Clock size={12} />}
                     {p.status === 'PENDING_APPROVAL' && <Clock size={12} />}
-                    {t('status_' + p.status.toLowerCase(), p.status)}
+                    {t('status_' + p.status.toLowerCase(), p.status) as string}
                   </div>
                 </div>
                 
