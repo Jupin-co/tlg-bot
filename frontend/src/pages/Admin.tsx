@@ -832,6 +832,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                             <option value={1}>USER</option>
                             <option value={2}>ADMIN</option>
                             <option value={3}>SUPER_ADMIN</option>
+                            <option value={4}>SUPPORT_ADMIN</option>
                           </select>
                         </div>
                         <button onClick={() => fetchUserLogs(u.telegram_id)} className="secondary py-1 px-3 text-xs rounded-lg flex items-center gap-1">
