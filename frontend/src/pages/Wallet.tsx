@@ -10,6 +10,7 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
   const [nationalCode, setNationalCode] = useState('');
   const [dob, setDob] = useState('');
   const [chargeAmount, setChargeAmount] = useState('');
+  const [redeemCode, setRedeemCode] = useState('');
   const [walletLoading, setWalletLoading] = useState(false);
   const [localProfile, setLocalProfile] = useState(userProfile);
 
@@ -41,6 +42,27 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
       if (data.error) alert(data.error);
       else {
         alert(t('msg_kyc_submitted', 'Verification submitted! Pending admin approval.'));
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setWalletLoading(false);
+  };
+
+  const handleWalletRedeem = async () => {
+    if (!redeemCode) return;
+    setWalletLoading(true);
+    try {
+      const res = await fetch('/api/wallet/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+        body: JSON.stringify({ code: redeemCode })
+      });
+      const data = await res.json();
+      if (data.error) alert(data.error);
+      else {
+        alert(t('msg_code_redeemed', 'Code successfully redeemed!'));
         window.location.reload();
       }
     } catch (e) {
@@ -171,6 +193,7 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
         )}
 
         {localProfile.wallet_status === 'VERIFIED' && (
+          <>
           <div className="card">
             <div className="flex items-center gap-2 mb-4">
               <CreditCard size={18} className="text-[var(--primary-color)]" />
@@ -182,23 +205,46 @@ export default function Wallet({ initData, userProfile }: { initData: string, us
               <div className="bg-[var(--secondary-bg-color)] p-1 rounded-xl border border-[var(--border-color)] flex items-center">
                 <input 
                   type="number" 
-                  placeholder={t('lbl_amount', 'Amount (IRT)')}
+                  placeholder={t('lbl_amount', 'Amount (IRT)')} 
                   className="flex-1 bg-transparent border-none p-3 num-fix focus:outline-none"
                   value={chargeAmount}
                   onChange={e => setChargeAmount(e.target.value)}
                 />
                 <span className="text-xs font-bold text-hint pr-3">{t('irt', 'IRT')}</span>
               </div>
-              
               <button 
-                className="w-full py-3 rounded-xl font-bold bg-[var(--primary-color)] text-white shadow-md hover:shadow-lg transition-all border-none cursor-pointer mt-1"
+                className="w-full py-3 rounded-xl font-bold bg-[var(--primary-color)] text-white shadow-md hover:shadow-lg transition-all border-none cursor-pointer"
                 onClick={handleWalletCharge}
-                disabled={walletLoading || !chargeAmount}
+                disabled={walletLoading}
               >
                 {walletLoading ? '...' : t('btn_charge', 'Charge Wallet')}
               </button>
             </div>
           </div>
+
+          <div className="card mt-4">
+            <h3 className="font-bold mb-3">{t('lbl_redeem_code', 'Redeem Code')}</h3>
+            <p className="text-sm text-hint mb-4">{t('msg_redeem_code', 'Enter a promotional code to charge your wallet.')}</p>
+            <div className="flex flex-col gap-3">
+              <div className="bg-[var(--secondary-bg-color)] p-1 rounded-xl border border-[var(--border-color)]">
+                <input 
+                  type="text" 
+                  placeholder={t('lbl_code', 'Code')} 
+                  className="w-full bg-transparent border-none p-3 focus:outline-none uppercase"
+                  value={redeemCode}
+                  onChange={e => setRedeemCode(e.target.value.toUpperCase())}
+                />
+              </div>
+              <button 
+                className="w-full py-3 rounded-xl font-bold bg-[var(--primary-color)] text-white shadow-md hover:shadow-lg transition-all border-none cursor-pointer"
+                onClick={handleWalletRedeem}
+                disabled={walletLoading}
+              >
+                {walletLoading ? '...' : t('btn_redeem', 'Redeem Code')}
+              </button>
+            </div>
+          </div>
+          </>
         )}
       </div>
     </div>

@@ -7,7 +7,7 @@ import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X,
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'catalog' | 'settings' | 'payments' | 'invoices' | 'messages' | 'users' | 'verifications'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'settings' | 'payments' | 'invoices' | 'messages' | 'users' | 'verifications' | 'wallet-codes'>('catalog');
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -19,6 +19,14 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [viewLogsUserId, setViewLogsUserId] = useState<number | null>(null);
   const [fullScreenImg, setFullScreenImg] = useState<string | null>(null);
   
+  
+  // Wallet Codes States
+  const [walletCodes, setWalletCodes] = useState<any[]>([]);
+  const [newWalletCode, setNewWalletCode] = useState('');
+  const [newWalletCodeAmount, setNewWalletCodeAmount] = useState('');
+  const [newWalletCodeExpires, setNewWalletCodeExpires] = useState('');
+  const [newWalletCodeType, setNewWalletCodeType] = useState('UNIQUE'); // UNIQUE or MULTI
+  const [viewingWalletCodeUses, setViewingWalletCodeUses] = useState<any[] | null>(null);
   // Catalog States
   const [showCatModal, setShowCatModal] = useState(false);
   const [showProdModal, setShowProdModal] = useState(false);
@@ -101,6 +109,14 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   };
 
   
+  
+  const fetchWalletCodes = () => {
+    fetch('/api/admin/wallet-codes', { headers: { 'x-telegram-init-data': initData } })
+      .then(res => res.json())
+      .then(data => {
+        if (data.codes) setWalletCodes(data.codes);
+      });
+  };
   const fetchInvoices = () => {
     fetch('/api/admin/invoices', { headers: { 'x-telegram-init-data': initData } })
       .then(r => r.json())
@@ -584,7 +600,81 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       )}
 
 
-      {activeTab === 'verifications' && (
+      
+      {activeTab === 'wallet-codes' && (
+        <div className="flex flex-col gap-4">
+          <h2 className="text-xl font-bold mb-2">{t('tab_wallet_codes', 'Wallet Codes')}</h2>
+          
+          <div className="card">
+            <h3 className="font-bold mb-3">{t('lbl_create_wallet_code', 'Create Wallet Code')}</h3>
+            <div className="flex flex-col gap-3">
+              <input type="text" placeholder={t('lbl_code_string', 'Code (e.g. SUMMER50)') as string} value={newWalletCode} onChange={e => setNewWalletCode(e.target.value)} />
+              <input type="number" placeholder={t('lbl_amount', 'Amount') as string} value={newWalletCodeAmount} onChange={e => setNewWalletCodeAmount(e.target.value)} />
+              <input type="date" placeholder={t('lbl_expires_at', 'Expires At (Optional)') as string} value={newWalletCodeExpires} onChange={e => setNewWalletCodeExpires(e.target.value)} />
+              <select value={newWalletCodeType} onChange={e => setNewWalletCodeType(e.target.value)} className="p-2 rounded bg-[var(--bg-color)] border border-[var(--border-color)] text-[var(--text-color)]">
+                <option value="UNIQUE">{t('lbl_unique_use', 'Unique Use (Single time total)')}</option>
+                <option value="MULTI">{t('lbl_multi_use', 'Multi User Use (Once per user)')}</option>
+              </select>
+              <button onClick={() => {
+                fetch('/api/admin/wallet-codes', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+                  body: JSON.stringify({ 
+                    code: newWalletCode, 
+                    amount: parseInt(newWalletCodeAmount),
+                    expires_at: newWalletCodeExpires || null,
+                    max_total_uses: newWalletCodeType === 'UNIQUE' ? 1 : null
+                  })
+                }).then(res => res.json()).then(data => {
+                  if (data.success) {
+                    setNewWalletCode('');
+                    setNewWalletCodeAmount('');
+                    setNewWalletCodeExpires('');
+                    fetchWalletCodes();
+                  } else {
+                    setToast({ msg: data.error, type: 'error' });
+                  }
+                });
+              }}>
+                {t('btn_create_code', 'Create Code')}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 mt-4">
+            {walletCodes.map(code => (
+              <div key={code.id} className="card">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-[var(--button-color)] m-0">{code.code}</h3>
+                    <p className="text-sm font-bold mt-1">Amount: {formatNumber(code.amount)}</p>
+                    <p className="text-xs text-hint mt-1">
+                      Type: {code.max_total_uses === 1 ? 'Unique Use' : 'Multi Use'}
+                    </p>
+                    {code.expires_at && <p className="text-xs text-hint mt-1">Expires: {new Date(code.expires_at).toLocaleDateString()}</p>}
+                  </div>
+                  <div className="text-right">
+                    <div 
+                      className="text-sm font-bold cursor-pointer text-[var(--button-color)] flex items-center gap-1 justify-end"
+                      onClick={() => {
+                        fetch(`/api/admin/wallet-codes/${code.id}/uses`, { headers: { 'x-telegram-init-data': initData } })
+                          .then(res => res.json())
+                          .then(data => {
+                            if (data.uses) setViewingWalletCodeUses(data.uses);
+                          });
+                      }}
+                    >
+                      <Users size={14} /> Uses: {code.use_count}
+                    </div>
+                    <p className="text-xs text-hint mt-2">{new Date(code.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+\n\n      {activeTab === 'verifications' && (
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="font-bold text-xl">{t('lbl_kyc_verifications', 'KYC Verifications')}</h2>
@@ -912,6 +1002,34 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               <ArrowLeft size={20} /> <span className="font-bold">{t('btn_back', 'Back') as string}</span>
             </button>
             <img src={fullScreenImg} alt="Receipt Fullscreen" style={{ width: '95%', maxHeight: '90%', objectFit: 'contain', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }} onClick={(e) => e.stopPropagation()} />
+          </div>
+        </div>
+      )}
+
+      {viewingWalletCodeUses !== null && (
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={() => setViewingWalletCodeUses(null)}>
+          <div className="card w-full" style={{ maxWidth: "500px", maxHeight: "90vh", display: "flex", flexDirection: "column", position: "relative" }} onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-bold m-0">{t('lbl_code_uses', 'Code Usages')}</h3>
+              <button onClick={() => setViewingWalletCodeUses(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', marginTop: '8px', paddingRight: '8px', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', minHeight: '0' }}>
+              {viewingWalletCodeUses.length === 0 ? (
+                <p className="text-hint">No uses yet.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {viewingWalletCodeUses.map((u, i) => (
+                    <div key={i} className="p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)] flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-sm m-0">{u.first_name} {u.username ? `(@${u.username})` : ''}</p>
+                        <p className="text-xs text-hint mt-1">ID: {u.telegram_id}</p>
+                      </div>
+                      <p className="text-xs text-hint">{new Date(u.used_at).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
