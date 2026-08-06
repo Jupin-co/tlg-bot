@@ -671,10 +671,13 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                     {code.expires_at && <p className="text-xs text-hint mt-1">Expires: {new Date(code.expires_at).toLocaleDateString()}</p>}
                   </div>
                   <div className="text-right flex flex-col items-end gap-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => {
+                      e.preventDefault();
+                      handleToggleWalletCode(code.id);
+                    }}>
                       <span className="text-xs text-hint">{code.is_active ? 'Active' : 'Disabled'}</span>
-                      <div className="relative">
-                        <input type="checkbox" className="sr-only" checked={code.is_active === 1} onChange={() => handleToggleWalletCode(code.id)} />
+                      <div className="relative pointer-events-none">
+                        <input type="checkbox" className="sr-only" checked={!!code.is_active} readOnly />
                         <div className={`block w-10 h-6 rounded-full ${code.is_active ? 'bg-[var(--button-color)]' : 'bg-[var(--secondary-bg-color)] border border-[var(--hint-color)]'}`}></div>
                         <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${code.is_active ? 'translate-x-4' : ''}`}></div>
                       </div>

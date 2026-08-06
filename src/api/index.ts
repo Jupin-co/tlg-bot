@@ -827,6 +827,15 @@ api.get('/admin/wallet-codes', adminMiddleware, async (c) => {
   return c.json({ codes: results });
 });
 
+api.post('/admin/wallet-codes/:id/toggle', adminMiddleware, async (c) => {
+  const codeId = c.req.param('id');
+  const codeRow = await c.env.DB.prepare("SELECT is_active FROM wallet_charge_codes WHERE id = ?").bind(codeId).first();
+  if (!codeRow) return c.json({ error: 'Not found' }, 404);
+  const newStatus = codeRow.is_active ? 0 : 1;
+  await c.env.DB.prepare("UPDATE wallet_charge_codes SET is_active = ? WHERE id = ?").bind(newStatus, codeId).run();
+  return c.json({ success: true, is_active: newStatus });
+});
+
 api.get('/admin/wallet-codes/:id/uses', adminMiddleware, async (c) => {
   const codeId = c.req.param('id');
   const { results } = await c.env.DB.prepare(`
