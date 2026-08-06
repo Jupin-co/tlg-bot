@@ -846,7 +846,7 @@ api.get('/tickets/:id', async (c) => {
   if (!ticket) return c.json({ error: 'Not found' }, 404);
   
   const { results: messages } = await c.env.DB.prepare(
-    'SELECT m.*, u.first_name as sender_name FROM ticket_messages m JOIN users u ON m.sender_id = u.id WHERE ticket_id = ? ORDER BY m.created_at ASC'
+    'SELECT m.*, u.first_name as sender_name FROM ticket_messages m JOIN users u ON m.sender_id = u.telegram_id WHERE ticket_id = ? ORDER BY m.created_at ASC'
   ).bind(ticketId).all();
   
   return c.json({ ticket, messages });
@@ -886,7 +886,7 @@ api.get('/admin/tickets', supportAdminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT t.*, u.first_name, i.type as invoice_type, i.total_price 
     FROM tickets t 
-    JOIN users u ON t.user_id = u.id
+    JOIN users u ON t.user_id = u.telegram_id
     LEFT JOIN invoices i ON t.invoice_id = i.id 
     ORDER BY t.created_at DESC
   `).all();
@@ -897,13 +897,13 @@ api.get('/admin/tickets/:id', supportAdminMiddleware, async (c) => {
   const ticketId = c.req.param('id');
   
   const ticket = await c.env.DB.prepare(
-    'SELECT t.*, u.first_name FROM tickets t JOIN users u ON t.user_id = u.id WHERE t.id = ?'
+    'SELECT t.*, u.first_name FROM tickets t JOIN users u ON t.user_id = u.telegram_id WHERE t.id = ?'
   ).bind(ticketId).first();
   
   if (!ticket) return c.json({ error: 'Not found' }, 404);
   
   const { results: messages } = await c.env.DB.prepare(
-    'SELECT m.*, u.first_name as sender_name FROM ticket_messages m JOIN users u ON m.sender_id = u.id WHERE ticket_id = ? ORDER BY m.created_at ASC'
+    'SELECT m.*, u.first_name as sender_name FROM ticket_messages m JOIN users u ON m.sender_id = u.telegram_id WHERE ticket_id = ? ORDER BY m.created_at ASC'
   ).bind(ticketId).all();
   
   return c.json({ ticket, messages });
