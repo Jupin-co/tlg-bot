@@ -28,10 +28,8 @@ app.get('*', async (c) => {
     return c.json({ error: 'Not Found' }, 404);
   }
   
-  // For frontend routes, fetch the root index.html so SPA router can take over
-  const url = new URL(c.req.url);
-  url.pathname = '/';
-  return fetch(new Request(url.toString(), c.req));
+  // For frontend routes, redirect to root with a query param so the SPA can handle it
+  return c.redirect('/?redirect=' + encodeURIComponent(c.req.path));
 });
 
 export default {

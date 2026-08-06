@@ -88,6 +88,13 @@ function App() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Handle SPA redirect from backend catch-all
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get('redirect');
+    if (redirect) {
+      window.history.replaceState({}, '', redirect);
+    }
+
     const tg = (window as any).Telegram?.WebApp;
     if (tg) {
       tg.expand();
