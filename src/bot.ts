@@ -76,11 +76,16 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
     
     const webAppUrl = "https://tlg-bot.m-pazouki-dev.workers.dev/";
 
-    // Check if user already has a phone number in profile
-    const existingProfile = await ctx.env.DB.prepare("SELECT phone_number FROM profiles WHERE user_id = ?").bind(profile.telegram_id).first();
+    // Check if user already has a phone number and selected language in profile
+    const existingProfile = await ctx.env.DB.prepare(`
+      SELECT p.phone_number, l.code as lang_code 
+      FROM profiles p 
+      LEFT JOIN languages l ON p.language_id = l.id 
+      WHERE p.user_id = ?
+    `).bind(profile.telegram_id).first();
     const hasPhoneNumber = !!(existingProfile && existingProfile.phone_number);
 
-    const lang = profile.language_code;
+    const lang = existingProfile?.lang_code || 'fa';
 
     if (!hasPhoneNumber) {
       const msg = await getBotMessage(ctx.env.DB, 'bot_request_contact', lang, "Please share your phone number to continue.");
@@ -102,16 +107,6 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
           inline_keyboard: [
             [{ text: btn, web_app: { url: webAppUrl } }]
           ]
-        }
-      });
-      // Also send the reply keyboard for convenience
-      await ctx.reply("Or use the menu button below:", {
-        reply_markup: {
-          keyboard: [
-            [{ text: btn, web_app: { url: webAppUrl } }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
         }
       });
     }
@@ -140,15 +135,6 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
             ]
           }
         });
-        await ctx.reply("Or use the menu button below:", {
-          reply_markup: {
-            keyboard: [
-              [{ text: btn, web_app: { url: webAppUrl } }]
-            ],
-            resize_keyboard: true,
-            is_persistent: true
-          }
-        });
       } else {
         const msg = await getBotMessage(ctx.env.DB, 'bot_contact_invalid', lang, "Please share your own contact number.");
         await ctx.reply(msg);
@@ -170,15 +156,6 @@ async function getBotMessage(db: any, key: string, lang: string, defaultText: st
           inline_keyboard: [
             [{ text: btn, web_app: { url: webAppUrl } }]
           ]
-        }
-      });
-      await ctx.reply("Or use the menu button below:", {
-        reply_markup: {
-          keyboard: [
-            [{ text: btn, web_app: { url: webAppUrl } }]
-          ],
-          resize_keyboard: true,
-          is_persistent: true
         }
       });
     }

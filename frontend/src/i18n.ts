@@ -21,7 +21,32 @@ const resources = {
       base_price: "Base Price",
       save: "Save",
       visible: "Visible on Landing",
-      phone_number: "Phone Number"
+      phone_number: "Phone Number",
+      lbl_days: "days",
+      lbl_lifetime: "Lifetime",
+      lbl_out_of_stock: "Out of Stock",
+      btn_add_to_basket: "Add to Basket",
+      tab_settings: "Settings",
+      tab_inventory: "Inventory",
+      lbl_support: "Support",
+      tab_wallet: "Wallet",
+      tab_payments: "Payments",
+      tab_catalog: "Catalog",
+      tab_messages: "Messages",
+      tab_users: "Users",
+      tab_invoices: "Invoices",
+      manage_codes: "Manage Codes",
+      bought_by: "Bought by",
+      invoice_hash: "Invoice #",
+      available: "Available",
+      sold: "Sold",
+      enter_code: "Enter code",
+      add: "Add",
+      delete: "Delete",
+      no_codes_added_yet: "No codes added yet",
+      toman: "Toman",
+      usd: "USD",
+      irr: "IRR"
     }
   },
   fa: {
@@ -43,7 +68,32 @@ const resources = {
       base_price: "قیمت پایه",
       save: "ذخیره",
       visible: "نمایش در صفحه اصلی",
-      phone_number: "شماره تماس"
+      phone_number: "شماره تماس",
+      lbl_days: "روز",
+      lbl_lifetime: "دائمی",
+      lbl_out_of_stock: "ناموجود",
+      btn_add_to_basket: "افزودن به سبد",
+      tab_settings: "تنظیمات",
+      tab_inventory: "موجودی",
+      lbl_support: "پشتیبانی",
+      tab_wallet: "کیف پول",
+      tab_payments: "پرداخت ها",
+      tab_catalog: "کاتالوگ",
+      tab_messages: "پیام ها",
+      tab_users: "کاربران",
+      tab_invoices: "فاکتورها",
+      manage_codes: "مدیریت کدها",
+      bought_by: "خریدار",
+      invoice_hash: "فاکتور #",
+      available: "موجود",
+      sold: "فروخته شده",
+      enter_code: "وارد کردن کد",
+      add: "افزودن",
+      delete: "حذف",
+      no_codes_added_yet: "هنوز کدی اضافه نشده",
+      toman: "تومان",
+      usd: "دلار",
+      irr: "ریال"
     }
   }
 };
@@ -76,3 +126,11 @@ export const loadTranslations = async () => {
 };
 
 export default i18n;
+
+export const formatNumber = (val: number | string | undefined | null) => {
+  if (val === undefined || val === null) return '';
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  if (isNaN(num)) return val.toString();
+  const locale = i18n.language === 'fa' ? 'fa-IR' : 'en-US';
+  return new Intl.NumberFormat(locale).format(num);
+};

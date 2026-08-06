@@ -31,7 +31,8 @@ CREATE TABLE users (
 
 CREATE TABLE roles (
     id INTEGER PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL
+    name TEXT UNIQUE NOT NULL,
+    permissions TEXT DEFAULT '[]'
 );
 INSERT INTO roles (id, name) VALUES (1, 'USER'), (2, 'ADMIN'), (3, 'SUPER_ADMIN');
 
@@ -64,6 +65,10 @@ CREATE TABLE profiles (
     role_id INTEGER DEFAULT 1,
     theme_id INTEGER DEFAULT 1,
     language_id INTEGER DEFAULT 2,
+    national_code TEXT,
+    date_of_birth TEXT,
+    wallet_status TEXT DEFAULT 'UNVERIFIED',
+    wallet_balance INTEGER DEFAULT 0,
     FOREIGN KEY(user_id) REFERENCES users(telegram_id),
     FOREIGN KEY(role_id) REFERENCES roles(id),
     FOREIGN KEY(theme_id) REFERENCES themes(id),
@@ -143,6 +148,7 @@ CREATE TABLE invoices (
     total_price INTEGER NOT NULL,
     currency TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'PENDING_PAYMENT',
+    type TEXT NOT NULL DEFAULT 'PRODUCT_PURCHASE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(telegram_id)
@@ -195,3 +201,25 @@ BEGIN
     INSERT INTO profiles (user_id, role_id, theme_id, language_id)
     VALUES (NEW.telegram_id, 1, 1, 2);
 END;
+
+
+CREATE TABLE tickets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  invoice_id INTEGER,
+  heading TEXT NOT NULL,
+  status TEXT DEFAULT 'OPEN',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id),
+  FOREIGN KEY(invoice_id) REFERENCES invoices(id)
+);
+
+CREATE TABLE ticket_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL,
+  sender_id INTEGER NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(ticket_id) REFERENCES tickets(id),
+  FOREIGN KEY(sender_id) REFERENCES users(id)
+);
