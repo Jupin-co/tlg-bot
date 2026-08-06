@@ -803,7 +803,7 @@ export default api;
 // --- SUPPORT TICKETS API ---
 
 // User ticket routes
-api.get('/api/tickets', async (c) => {
+api.get('/tickets', async (c) => {
   const user = c.get('user');
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
   
@@ -817,7 +817,7 @@ api.get('/api/tickets', async (c) => {
   return c.json({ tickets: results });
 });
 
-api.post('/api/tickets', async (c) => {
+api.post('/tickets', async (c) => {
   const user = c.get('user');
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
   
@@ -837,7 +837,7 @@ api.post('/api/tickets', async (c) => {
   return c.json({ success: true, ticketId });
 });
 
-api.get('/api/tickets/:id', async (c) => {
+api.get('/tickets/:id', async (c) => {
   const user = c.get('user');
   const ticketId = c.req.param('id');
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
@@ -852,7 +852,7 @@ api.get('/api/tickets/:id', async (c) => {
   return c.json({ ticket, messages });
 });
 
-api.post('/api/tickets/:id/messages', async (c) => {
+api.post('/tickets/:id/messages', async (c) => {
   const user = c.get('user');
   const ticketId = c.req.param('id');
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
@@ -872,7 +872,7 @@ api.post('/api/tickets/:id/messages', async (c) => {
   return c.json({ success: true });
 });
 
-api.post('/api/tickets/:id/close', async (c) => {
+api.post('/tickets/:id/close', async (c) => {
   const user = c.get('user');
   const ticketId = c.req.param('id');
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
