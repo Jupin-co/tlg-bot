@@ -23,11 +23,15 @@ export default function Support({ initData }: { initData: string }) {
     if (initData) {
       fetchTickets();
       fetchPayments();
+      const interval = setInterval(() => {
+        fetchTickets();
+      }, 3000);
+      return () => clearInterval(interval);
     }
   }, [initData]);
 
   const fetchTickets = () => {
-    fetch('/api/tickets', {
+    fetch('/tickets', {
       headers: { 'x-telegram-init-data': initData }
     })
       .then(res => res.json())
@@ -49,7 +53,7 @@ export default function Support({ initData }: { initData: string }) {
   
   const viewTicket = (ticket: any) => {
     setActiveTicket(ticket);
-    fetch(`/api/tickets/${ticket.id}`, {
+    fetch(`/tickets/${ticket.id}`, {
       headers: { 'x-telegram-init-data': initData }
     })
       .then(res => res.json())
@@ -58,10 +62,24 @@ export default function Support({ initData }: { initData: string }) {
       });
   };
 
-  const handleCreateTicket = () => {
+  useEffect(() => {
+    if (!activeTicket) return;
+    const interval = setInterval(() => {
+      fetch(`/tickets/${activeTicket.id}`, {
+        headers: { 'x-telegram-init-data': initData }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.messages) setMessages(data.messages);
+        });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [activeTicket, initData]);
+
+const handleCreateTicket = () => {
     if (!newHeading.trim() || !newMessage.trim()) return;
     
-    fetch('/api/tickets', {
+    fetch('/tickets', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -88,7 +106,7 @@ export default function Support({ initData }: { initData: string }) {
   const handleReply = () => {
     if (!replyText.trim() || !activeTicket) return;
     
-    fetch(`/api/tickets/${activeTicket.id}/messages`, {
+    fetch(`/tickets/${activeTicket.id}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -109,7 +127,7 @@ export default function Support({ initData }: { initData: string }) {
     if (!activeTicket) return;
     if (!confirm(t('confirm_close_ticket', 'Are you sure you want to close this ticket?'))) return;
     
-    fetch(`/api/tickets/${activeTicket.id}/close`, {
+    fetch(`/tickets/${activeTicket.id}/close`, {
       method: 'POST',
       headers: { 'x-telegram-init-data': initData }
     })
@@ -143,11 +161,14 @@ export default function Support({ initData }: { initData: string }) {
         
         <div className="flex-1 overflow-y-auto mb-4 flex flex-col gap-3 pb-2">
           {messages.map(m => {
+            const isMe = m.sender_id === activeTicket.user_id;
             return (
-              <div key={m.id} className={`p-3 rounded-xl max-w-[85%] ${m.sender_name ? 'bg-[var(--secondary-bg-color)] self-start' : 'bg-[var(--primary-color)] text-white self-end'}`}>
-                {m.sender_name && <div className="text-xs opacity-70 mb-1 font-bold">{m.sender_name} (Support)</div>}
+              <div key={m.id} className={`relative group p-3 rounded-xl max-w-[85%] ${isMe ? 'bg-[var(--button-color)] text-[var(--button-text-color)] self-end' : 'bg-[var(--secondary-bg-color)] text-[var(--text-color)] self-start'}`}>
+                {!isMe && m.sender_name && <div className="text-xs opacity-70 mb-1 font-bold">{m.sender_name} (Support)</div>}
                 <div className="text-sm whitespace-pre-wrap">{m.message}</div>
-                <div className="text-[10px] opacity-60 mt-1 text-right">{new Date(m.created_at).toLocaleString()}</div>
+                <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? 'right-full mr-2' : 'left-full ml-2'} text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/70 text-white px-2 py-1 rounded pointer-events-none z-10`}>
+                  {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             );
           })}

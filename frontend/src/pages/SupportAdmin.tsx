@@ -113,10 +113,12 @@ export default function SupportAdmin({ initData }: { initData: string }) {
           {messages.map((m: any) => {
             const isUser = m.sender_id === activeTicket.user_id;
             return (
-              <div key={m.id} className={`p-3 rounded-xl max-w-[85%] ${!isUser ? 'bg-[var(--secondary-bg-color)] self-start' : 'bg-[var(--primary-color)] text-white self-end'}`}>
+              <div key={m.id} className={`relative group p-3 rounded-xl max-w-[85%] ${!isUser ? 'bg-[var(--button-color)] text-[var(--button-text-color)] self-end' : 'bg-[var(--secondary-bg-color)] text-[var(--text-color)] self-start'}`}>
                 <div className="text-xs opacity-70 mb-1 font-bold">{isUser ? activeTicket.first_name : m.sender_name + ' (Support)'}</div>
                 <div className="text-sm whitespace-pre-wrap">{m.message}</div>
-                <div className="text-[10px] opacity-60 mt-1 text-right">{new Date(m.created_at).toLocaleString()}</div>
+                <div className={`absolute top-1/2 -translate-y-1/2 ${!isUser ? 'right-full mr-2' : 'left-full ml-2'} text-[10px] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/70 text-white px-2 py-1 rounded pointer-events-none z-10`}>
+                  {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             );
           })}
