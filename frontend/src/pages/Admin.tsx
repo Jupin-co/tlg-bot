@@ -77,7 +77,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     adminTabs.push(
       { id: 'settings', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
       { id: 'users', icon: <Users size={18} />, label: t('tab_users', 'Users') as string },
-      { id: 'messages', icon: <MessageSquare size={18} />, label: t('tab_messages', 'Messages') as string }
+      { id: 'messages', icon: <MessageSquare size={18} />, label: t('tab_messages', 'Messages') as string },
+      { id: 'wallet-codes', icon: <CreditCard size={18} />, label: t('tab_wallet_codes', 'Wallet Codes') as string }
     );
   }
 
