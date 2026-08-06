@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, CreditCard, Share2, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Menu, X } from 'lucide-react';
+import { User, Settings, CreditCard, Share2, Moon, Sun, Clock, FileText, CheckCircle2, XCircle, Menu, X, MessageSquare } from 'lucide-react';
 
 export default function Profile({ initData, userProfile, error }: { initData: string, userProfile: any, error?: string | null }) {
   const { t, i18n } = useTranslation();
@@ -144,13 +144,14 @@ export default function Profile({ initData, userProfile, error }: { initData: st
               {[
                 { id: 'profile', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
                 { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string },
-                { id: 'wallet', icon: <CreditCard size={18} />, label: t('lbl_wallet', 'My Wallet') as string }
+                { id: 'wallet', icon: <CreditCard size={18} />, label: t('lbl_wallet', 'My Wallet') as string },
+                { id: 'support', icon: <MessageSquare size={18} />, label: t('lbl_support', 'Support') as string }
               ].map(tab => (
                 <button 
                   key={tab.id}
                   className={`drawer-item ${activeTab === tab.id ? 'active' : ''}`}
                   onClick={() => {
-                    if (tab.id === 'wallet') { navigate('/wallet'); } else { setActiveTab(tab.id as any); }
+                    if (tab.id === 'wallet') { navigate('/wallet'); } else if (tab.id === 'support') { navigate('/support'); } else { setActiveTab(tab.id as any); }
                     setIsMenuOpen(false);
                   }}
                 >

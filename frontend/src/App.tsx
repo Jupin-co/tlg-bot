@@ -9,7 +9,9 @@ import Wallet from './pages/Wallet';
 import Basket from './pages/Basket';
 import InvoiceView from './pages/InvoiceView';
 import Inventory from './pages/Inventory';
-import { User, Store, Settings, Package } from 'lucide-react';
+import Support from './pages/Support';
+import SupportAdmin from './pages/SupportAdmin';
+import { User, Store, Settings, Package, MessageSquare } from 'lucide-react';
 
 function Navigation({ userProfile }: { userProfile: any }) {
   const { t } = useTranslation();
@@ -17,6 +19,7 @@ function Navigation({ userProfile }: { userProfile: any }) {
   const location = useLocation();
 
   const isAdmin = userProfile?.role === 'ADMIN' || userProfile?.role === 'SUPER_ADMIN';
+  const isSupportAdmin = isAdmin || userProfile?.role === 'SUPPORT_ADMIN';
 
   return (
     <div className="nav-bar">
@@ -41,6 +44,15 @@ function Navigation({ userProfile }: { userProfile: any }) {
         <User size={24} />
         <span>{t('profile')}</span>
       </div>
+      {isSupportAdmin && (
+        <div 
+          className={`nav-item ${location.pathname === '/support-admin' ? 'active' : ''}`}
+          onClick={() => navigate('/support-admin')}
+        >
+          <MessageSquare size={24} />
+          <span>{t('lbl_support', 'Support')}</span>
+        </div>
+      )}
       {isAdmin && (
         <div 
           className={`nav-item ${location.pathname === '/admin' ? 'active' : ''}`}
@@ -144,6 +156,8 @@ function App() {
           <Route path="/wallet" element={<Wallet initData={initData} userProfile={userProfile} />} />
           <Route path="/profile" element={<Profile initData={initData} userProfile={userProfile} error={fetchError} />} />
           <Route path="/admin" element={<Admin initData={initData} userProfile={userProfile} />} />
+          <Route path="/support" element={<Support initData={initData} />} />
+          <Route path="/support-admin" element={<SupportAdmin initData={initData} />} />
         </Routes>
       </div>
       <Navigation userProfile={userProfile} />
