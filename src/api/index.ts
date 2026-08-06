@@ -68,13 +68,18 @@ const adminMiddleware = async (c: any, next: any) => {
   
   const { DB } = c.env;
   const dbUser = await DB.prepare(`
-    SELECT r.name as role 
+    SELECT r.name as role, r.permissions
     FROM profiles p 
     JOIN roles r ON p.role_id = r.id 
     WHERE p.user_id = ?
   `).bind(user.id).first();
   
-  if (!dbUser || (dbUser.role !== 'SUPER_ADMIN' && dbUser.role !== 'ADMIN')) {
+  if (!dbUser) return c.json({ error: 'Forbidden. Admins only.' }, 403);
+  
+  let perms = [];
+  try { perms = JSON.parse(dbUser.permissions || '[]'); } catch(e) {}
+  
+  if (dbUser.role !== 'SUPER_ADMIN' && perms.length === 0) {
     return c.json({ error: 'Forbidden. Admins only.' }, 403);
   }
   await next();
@@ -92,6 +97,7 @@ api.get('/user', async (c) => {
       p.wallet_status,
       p.wallet_balance,
       r.name as role,
+      r.permissions,
       t.name as theme_preference,
       l.code as language_preference
     FROM users u
@@ -105,6 +111,7 @@ api.get('/user', async (c) => {
   if (dbUser) {
     dbUser.wallet_status = dbUser.wallet_status || 'UNVERIFIED';
     dbUser.wallet_balance = dbUser.wallet_balance || 0;
+    try { dbUser.permissions = JSON.parse(dbUser.permissions || '[]'); } catch(e) { dbUser.permissions = []; }
   }
   
   return c.json({ user: dbUser || user });
@@ -901,6 +908,35 @@ api.post('/wallet/redeem', async (c) => {
   ).bind(user.id, JSON.stringify({ code: codeRow.code, amount: codeRow.amount })).run();
 
   return c.json({ success: true, amount: codeRow.amount });
+});
+
+
+
+api.get('/admin/roles', adminMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare("SELECT * FROM roles ORDER BY id ASC").all();
+  return c.json({ roles: results.map(r => ({ ...r, permissions: JSON.parse(r.permissions || '[]') })) });
+});
+
+api.post('/admin/roles', adminMiddleware, async (c) => {
+  const { name, permissions } = await c.req.json();
+  if (!name) return c.json({ error: 'Name is required' }, 400);
+  try {
+    await c.env.DB.prepare("INSERT INTO roles (name, permissions) VALUES (?, ?)").bind(name, JSON.stringify(permissions || [])).run();
+    return c.json({ success: true });
+  } catch (e) {
+    return c.json({ error: 'Failed to create role' }, 500);
+  }
+});
+
+api.put('/admin/roles/:id', adminMiddleware, async (c) => {
+  const id = c.req.param('id');
+  const { permissions } = await c.req.json();
+  try {
+    await c.env.DB.prepare("UPDATE roles SET permissions = ? WHERE id = ?").bind(JSON.stringify(permissions || []), id).run();
+    return c.json({ success: true });
+  } catch (e) {
+    return c.json({ error: 'Failed to update role' }, 500);
+  }
 });
 
 

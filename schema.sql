@@ -31,7 +31,8 @@ CREATE TABLE users (
 
 CREATE TABLE roles (
     id INTEGER PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL
+    name TEXT UNIQUE NOT NULL,
+    permissions TEXT DEFAULT '[]'
 );
 INSERT INTO roles (id, name) VALUES (1, 'USER'), (2, 'ADMIN'), (3, 'SUPER_ADMIN');
 

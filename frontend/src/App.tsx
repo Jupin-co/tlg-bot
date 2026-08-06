@@ -18,7 +18,7 @@ function Navigation({ userProfile }: { userProfile: any }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isAdmin = userProfile?.role === 'ADMIN' || userProfile?.role === 'SUPER_ADMIN';
+  const isAdmin = userProfile?.role === 'SUPER_ADMIN' || (userProfile?.permissions && userProfile.permissions.length > 0);
   const isSupportAdmin = isAdmin || userProfile?.role === 'SUPPORT_ADMIN';
 
   return (

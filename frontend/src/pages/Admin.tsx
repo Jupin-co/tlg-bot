@@ -7,7 +7,7 @@ import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X,
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'catalog' | 'settings' | 'payments' | 'invoices' | 'messages' | 'users' | 'verifications' | 'wallet-codes'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'settings' | 'payments' | 'invoices' | 'messages' | 'users' | 'verifications' | 'wallet-codes' | 'roles'>('catalog');
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
@@ -22,6 +22,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   
   // Wallet Codes States
   const [walletCodes, setWalletCodes] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [newRoleName, setNewRoleName] = useState('');
   const [newWalletCode, setNewWalletCode] = useState('');
   const [newWalletCodeAmount, setNewWalletCodeAmount] = useState('');
   const [newWalletCodeExpires, setNewWalletCodeExpires] = useState('');
@@ -67,20 +69,18 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const isAdmin = userProfile?.role === 'ADMIN' || userProfile?.role === 'SUPER_ADMIN';
   const isSuperAdmin = userProfile?.role === 'SUPER_ADMIN';
 
-  const adminTabs = [
+  const allTabs = [
     { id: 'catalog', icon: <ShoppingBag size={18} />, label: t('tab_catalog', 'Catalog') as string },
     { id: 'payments', icon: <CreditCard size={18} />, label: t('tab_payments', 'Payments') as string },
     { id: 'invoices', icon: <CreditCard size={18} />, label: t('tab_invoices', 'Invoices') as string },
+    { id: 'settings', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
+    { id: 'users', icon: <Users size={18} />, label: t('tab_users', 'Users') as string },
+    { id: 'messages', icon: <MessageSquare size={18} />, label: t('tab_messages', 'Messages') as string },
+    { id: 'wallet-codes', icon: <CreditCard size={18} />, label: t('tab_wallet_codes', 'Wallet Codes') as string },
+    { id: 'roles', icon: <Key size={18} />, label: t('tab_roles', 'Roles') as string }
   ];
 
-  if (isSuperAdmin) {
-    adminTabs.push(
-      { id: 'settings', icon: <Settings size={18} />, label: t('tab_settings', 'Settings') as string },
-      { id: 'users', icon: <Users size={18} />, label: t('tab_users', 'Users') as string },
-      { id: 'messages', icon: <MessageSquare size={18} />, label: t('tab_messages', 'Messages') as string },
-      { id: 'wallet-codes', icon: <CreditCard size={18} />, label: t('tab_wallet_codes', 'Wallet Codes') as string }
-    );
-  }
+  const adminTabs = isSuperAdmin ? allTabs : allTabs.filter(tab => userProfile?.permissions?.includes(tab.id));
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ msg, type });
@@ -125,6 +125,55 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       showToast(t("toast_fetch_failed", "Failed to perform action"), "error");
     }
   };
+  const fetchRoles = () => {
+    fetch('/api/admin/roles', { headers: { 'x-telegram-init-data': initData } })
+      .then(res => res.json())
+      .then(data => {
+        if (data.roles) setRoles(data.roles);
+      })
+      .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
+  };
+
+  const handleCreateRole = async () => {
+    if (!newRoleName) return;
+    try {
+      const res = await fetch('/api/admin/roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+        body: JSON.stringify({ name: newRoleName.toUpperCase(), permissions: [] })
+      });
+      if (res.ok) {
+        showToast(t("toast_success", "Success"), "success");
+        setNewRoleName('');
+        fetchRoles();
+      } else showToast(t("toast_fetch_failed", "Failed to perform action"), "error");
+    } catch { showToast(t("toast_fetch_failed", "Failed to perform action"), "error"); }
+  };
+
+  const handleToggleRolePermission = async (roleId: number, permission: string) => {
+    const role = roles.find(r => r.id === roleId);
+    if (!role) return;
+    const currentPerms = role.permissions || [];
+    const newPerms = currentPerms.includes(permission) ? currentPerms.filter((p: string) => p !== permission) : [...currentPerms, permission];
+    
+    setRoles(roles.map(r => r.id === roleId ? { ...r, permissions: newPerms } : r));
+    
+    try {
+      const res = await fetch(`/api/admin/roles/${roleId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+        body: JSON.stringify({ permissions: newPerms })
+      });
+      if (!res.ok) {
+        showToast(t("toast_fetch_failed", "Failed to perform action"), "error");
+        fetchRoles(); // rollback
+      }
+    } catch {
+      showToast(t("toast_fetch_failed", "Failed to perform action"), "error");
+      fetchRoles(); // rollback
+    }
+  };
+
   const fetchWalletCodes = () => {
     fetch('/api/admin/wallet-codes', { headers: { 'x-telegram-init-data': initData } })
       .then(res => res.json())
@@ -179,6 +228,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'verifications') fetchVerifications();
     if (activeTab === 'wallet-codes') fetchWalletCodes();
+    if (activeTab === 'roles') fetchRoles();
   }, [initData, isAdmin, activeTab]);
 
   const addCategory = async () => {
@@ -947,6 +997,64 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               </div>
             );
           })}
+        </div>
+      )}
+
+      {activeTab === 'roles' && (
+        <div className="section-card glass-panel fade-in">
+          <h2 className="text-lg font-bold mb-4">{t('tab_roles', 'Roles & Permissions')}</h2>
+          
+          <div className="card">
+            <h3 className="font-bold mb-3">Create New Role</h3>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                className="input-field flex-1" 
+                placeholder="e.g. SUPPORT_ADMIN"
+                value={newRoleName}
+                onChange={e => setNewRoleName(e.target.value)}
+              />
+              <button onClick={handleCreateRole} disabled={!newRoleName}>
+                <Plus size={18} /> Create
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 mt-4">
+            {roles.map(role => (
+              <div key={role.id} className="card">
+                <h3 className="font-bold text-lg mb-4 text-[var(--link-color)]">{role.name}</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {allTabs.map(tab => (
+                    <label 
+                      key={tab.id} 
+                      className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-[var(--secondary-bg-color)] transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (role.name !== 'SUPER_ADMIN') {
+                          handleToggleRolePermission(role.id, tab.id);
+                        } else {
+                          showToast('Super Admin permissions cannot be modified here', 'error');
+                        }
+                      }}
+                    >
+                      <div className="relative pointer-events-none">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only" 
+                          checked={role.permissions?.includes(tab.id) || false} 
+                          readOnly 
+                        />
+                        <div className={`block w-10 h-6 rounded-full ${role.permissions?.includes(tab.id) ? 'bg-[var(--button-color)]' : 'bg-[var(--secondary-bg-color)] border border-[var(--hint-color)]'}`}></div>
+                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${role.permissions?.includes(tab.id) ? 'translate-x-4' : ''}`}></div>
+                      </div>
+                      <span className="text-sm font-semibold">{tab.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
