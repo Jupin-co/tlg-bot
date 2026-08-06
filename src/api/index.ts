@@ -848,7 +848,7 @@ api.post('/wallet/redeem', async (c) => {
 
   // Check if wallet is ACTIVE
   const profile = await c.env.DB.prepare("SELECT wallet_status FROM profiles WHERE user_id = ?").bind(user.id).first();
-  if (!profile || profile.wallet_status !== 'ACTIVE') {
+  if (!profile || profile.wallet_status !== 'VERIFIED') {
     return c.json({ error: 'Wallet is not active' }, 400);
   }
 
