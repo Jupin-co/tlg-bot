@@ -358,10 +358,11 @@ api.post('/admin/settings', adminMiddleware, async (c) => {
 
 api.get('/admin/invoices', adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(`
-    SELECT i.*, u.username, u.first_name, ru.first_name as reviewer_name, ru.username as reviewer_username
+    SELECT i.*, u.username, u.first_name, ru.first_name as reviewer_name, ru.username as reviewer_username, p.payment_data
       FROM invoices i
       JOIN users u ON i.user_id = u.telegram_id
       LEFT JOIN users ru ON i.reviewed_by = ru.telegram_id
+      LEFT JOIN payments p ON p.invoice_id = i.id
       ORDER BY i.created_at DESC
   `).all();
   return c.json({ invoices: results });

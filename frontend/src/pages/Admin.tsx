@@ -658,8 +658,26 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           {invoices.length === 0 ? (
             <p className="text-hint">No invoices found.</p>
           ) : (
-            invoices.map(inv => (
-              <div key={inv.id} className="card">
+            invoices.map(inv => {
+              let receiptKey = null;
+              if (inv.payment_data) {
+                try {
+                  const data = JSON.parse(inv.payment_data);
+                  receiptKey = data.receipt_key;
+                } catch (e) {}
+              }
+              
+              return (
+              <div 
+                key={inv.id} 
+                className={`card ${receiptKey ? 'cursor-pointer hover:border-[var(--button-color)] transition-colors' : ''}`}
+                onClick={() => {
+                  if (receiptKey) {
+                    const k = receiptKey.startsWith('receipts/') ? receiptKey.replace('receipts/', '') : receiptKey;
+                    setFullScreenImg(`/api/receipt-image/${k}`);
+                  }
+                }}
+              >
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex-1 overflow-hidden">
                     <h3 className="font-bold m-0 truncate">{t('invoice_hash', 'Invoice #') as string}{inv.id}</h3>
@@ -669,6 +687,11 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                     <p className="text-xs text-hint mt-1 flex items-center gap-1">
                       <Clock size={12} /> {new Date(inv.created_at).toLocaleString()}
                     </p>
+                    {receiptKey && (
+                      <p className="text-xs text-[var(--button-color)] mt-2 flex items-center gap-1">
+                        <Eye size={14} /> {t('lbl_view_receipt', 'View Receipt')}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right flex-shrink-0">
                     <span className={`text-[10px] sm:text-xs font-bold px-2 py-1 rounded whitespace-nowrap ${
@@ -691,7 +714,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                   </div>
                 )}
               </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
