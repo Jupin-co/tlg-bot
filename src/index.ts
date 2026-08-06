@@ -21,6 +21,19 @@ app.post('/bot', async (c) => {
 // Note: Root path '/' and other static assets will be handled automatically 
 // by Cloudflare Workers Assets configured in wrangler.toml
 
+
+app.get('*', async (c) => {
+  // If it's an API route, return 404 json
+  if (c.req.path.startsWith('/api') || c.req.path.startsWith('/bot')) {
+    return c.json({ error: 'Not Found' }, 404);
+  }
+  
+  // For frontend routes, fetch the root index.html so SPA router can take over
+  const url = new URL(c.req.url);
+  url.pathname = '/';
+  return fetch(new Request(url.toString(), c.req));
+});
+
 export default {
   fetch: app.fetch,
   async scheduled(event: any, env: Env, ctx: any) {

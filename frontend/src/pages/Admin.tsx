@@ -229,6 +229,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     if (activeTab === 'verifications') fetchVerifications();
     if (activeTab === 'wallet-codes') fetchWalletCodes();
     if (activeTab === 'roles') fetchRoles();
+    if (activeTab === 'users') fetchRoles();
   }, [initData, isAdmin, activeTab]);
 
   const addCategory = async () => {
@@ -1081,10 +1082,9 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                             disabled={userProfile?.role !== 'SUPER_ADMIN'}
                             className="p-1 px-2 text-sm rounded-lg border border-[var(--border-color)] bg-[var(--secondary-bg-color)] text-[var(--text-color)]"
                           >
-                            <option value={1}>USER</option>
-                            <option value={2}>ADMIN</option>
-                            <option value={3}>SUPER_ADMIN</option>
-                            <option value={4}>SUPPORT_ADMIN</option>
+                            {roles.map(r => (
+                              <option key={r.id} value={r.id}>{r.name}</option>
+                            ))}
                           </select>
                         </div>
                         <button onClick={() => fetchUserLogs(u.telegram_id)} className="secondary py-1 px-3 text-xs rounded-lg flex items-center gap-1">
