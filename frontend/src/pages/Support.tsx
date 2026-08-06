@@ -31,12 +31,16 @@ export default function Support({ initData }: { initData: string }) {
   }, [initData]);
 
   const fetchTickets = () => {
-    fetch('/tickets', {
+    fetch('/api/tickets', {
       headers: { 'x-telegram-init-data': initData }
     })
       .then(res => res.json())
       .then(data => {
         setTickets(data.tickets || []);
+        setLoading(false);
+      })
+      .catch(e => {
+        console.error("fetchTickets error", e);
         setLoading(false);
       });
   };
@@ -53,7 +57,7 @@ export default function Support({ initData }: { initData: string }) {
   
   const viewTicket = (ticket: any) => {
     setActiveTicket(ticket);
-    fetch(`/tickets/${ticket.id}`, {
+    fetch(`/api/tickets/${ticket.id}`, {
       headers: { 'x-telegram-init-data': initData }
     })
       .then(res => res.json())
@@ -65,7 +69,7 @@ export default function Support({ initData }: { initData: string }) {
   useEffect(() => {
     if (!activeTicket) return;
     const interval = setInterval(() => {
-      fetch(`/tickets/${activeTicket.id}`, {
+      fetch(`/api/tickets/${activeTicket.id}`, {
         headers: { 'x-telegram-init-data': initData }
       })
         .then(res => res.json())
@@ -79,7 +83,7 @@ export default function Support({ initData }: { initData: string }) {
 const handleCreateTicket = () => {
     if (!newHeading.trim() || !newMessage.trim()) return;
     
-    fetch('/tickets', {
+    fetch('/api/tickets', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -106,7 +110,7 @@ const handleCreateTicket = () => {
   const handleReply = () => {
     if (!replyText.trim() || !activeTicket) return;
     
-    fetch(`/tickets/${activeTicket.id}/messages`, {
+    fetch(`/api/tickets/${activeTicket.id}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,7 +131,7 @@ const handleCreateTicket = () => {
     if (!activeTicket) return;
     if (!confirm(t('confirm_close_ticket', 'Are you sure you want to close this ticket?'))) return;
     
-    fetch(`/tickets/${activeTicket.id}/close`, {
+    fetch(`/api/tickets/${activeTicket.id}/close`, {
       method: 'POST',
       headers: { 'x-telegram-init-data': initData }
     })
