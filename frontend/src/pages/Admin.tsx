@@ -675,7 +675,9 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           </div>
         </div>
       )}
-\n\n      {activeTab === 'verifications' && (
+
+
+      {activeTab === 'verifications' && (
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center mb-2">
             <h2 className="font-bold text-xl">{t('lbl_kyc_verifications', 'KYC Verifications')}</h2>
