@@ -864,6 +864,9 @@ api.post('/wallet/redeem', async (c) => {
   }
 
   // Check max uses
+  if (codeRow.is_active === 0) {
+    return c.json({ error: 'err_code_inactive' }, 400);
+  }
   if (codeRow.max_total_uses) {
     const { count } = await c.env.DB.prepare("SELECT COUNT(*) as count FROM wallet_charge_code_uses WHERE code_id = ?").bind(codeRow.id).first();
     if (count >= codeRow.max_total_uses) {

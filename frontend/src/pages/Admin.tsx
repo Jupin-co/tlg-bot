@@ -109,8 +109,22 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
   };
 
-  
-  
+  const handleToggleWalletCode = async (id: number) => {
+    try {
+      const res = await fetch(`/api/admin/wallet-codes/${id}/toggle`, {
+        method: 'POST',
+        headers: { 'x-telegram-init-data': initData }
+      });
+      if (res.ok) {
+        fetchWalletCodes();
+        showToast(t("toast_success", "Success"), "success");
+      } else {
+        showToast(t("toast_fetch_failed", "Failed to perform action"), "error");
+      }
+    } catch (e) {
+      showToast(t("toast_fetch_failed", "Failed to perform action"), "error");
+    }
+  };
   const fetchWalletCodes = () => {
     fetch('/api/admin/wallet-codes', { headers: { 'x-telegram-init-data': initData } })
       .then(res => res.json())
@@ -163,6 +177,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     if (activeTab === 'invoices') fetchInvoices();
     if (activeTab === 'messages') fetchTranslations();
     if (activeTab === 'users') fetchUsers();
+    if (activeTab === 'verifications') fetchVerifications();
+    if (activeTab === 'wallet-codes') fetchWalletCodes();
   }, [initData, isAdmin, activeTab]);
 
   const addCategory = async () => {
@@ -654,7 +670,15 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                     </p>
                     {code.expires_at && <p className="text-xs text-hint mt-1">Expires: {new Date(code.expires_at).toLocaleDateString()}</p>}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span className="text-xs text-hint">{code.is_active ? 'Active' : 'Disabled'}</span>
+                      <div className="relative">
+                        <input type="checkbox" className="sr-only" checked={code.is_active === 1} onChange={() => handleToggleWalletCode(code.id)} />
+                        <div className={`block w-10 h-6 rounded-full ${code.is_active ? 'bg-[var(--button-color)]' : 'bg-[var(--secondary-bg-color)] border border-[var(--hint-color)]'}`}></div>
+                        <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${code.is_active ? 'translate-x-4' : ''}`}></div>
+                      </div>
+                    </label>
                     <div 
                       className="text-sm font-bold cursor-pointer text-[var(--button-color)] flex items-center gap-1 justify-end"
                       onClick={() => {
