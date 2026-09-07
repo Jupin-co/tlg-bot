@@ -203,17 +203,22 @@ api.post('/invoice/:id/pay-with-wallet', async (c) => {
   await c.env.DB.prepare("UPDATE invoices SET status = 'APPROVED', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?").bind(user.id, invoiceId).run();
 
   const { results: items } = await c.env.DB.prepare(`
-    SELECT ii.product_id, i.user_id, ii.snapshot_name, ii.snapshot_description, ii.snapshot_duration_days, ii.quantity
+    SELECT ii.product_id, ii.variant_id, i.user_id, ii.snapshot_name, ii.snapshot_description, ii.snapshot_duration_days, ii.quantity
     FROM invoice_items ii
     JOIN invoices i ON ii.invoice_id = i.id
     WHERE ii.invoice_id = ?
   `).bind(invoiceId).all();
 
   const codeAssignments = [];
-  for (const item of items) {
+  for (const item of items as any[]) {
     if (item.snapshot_duration_days > 0) {
       for (let q = 0; q < item.quantity; q++) {
-        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id).first();
+        let code;
+        if (item.variant_id) {
+          code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND variant_id = ? AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id, item.variant_id).first();
+        } else {
+          code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND variant_id IS NULL AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id).first();
+        }
         if (!code) {
           // Rollback the deduction? For simplicity, we just throw error here, but ideally we should run in transaction. D1 doesn't support full transactions easily in this API style yet, but we'll return error.
           return c.json({ error: `Not enough redeem codes available for ${item.snapshot_name}.` }, 400);
@@ -224,20 +229,26 @@ api.post('/invoice/:id/pay-with-wallet', async (c) => {
     }
   }
 
-  for (const item of items) {
+  for (const item of items as any[]) {
     for (let q = 0; q < item.quantity; q++) {
       const startsAt = new Date();
       const endsAt = new Date(startsAt.getTime() + item.snapshot_duration_days * 24 * 60 * 60 * 1000);
       let assignedCode = null;
       if (item.snapshot_duration_days > 0) {
-         const assignObj = codeAssignments.find(ca => ca.item.product_id === item.product_id);
+         const assignObj = codeAssignments.find(ca => ca.item.product_id === item.product_id && ca.item.variant_id === item.variant_id);
          if (assignObj) {
            assignedCode = assignObj.codeStr;
            await c.env.DB.prepare("UPDATE redeem_codes SET payment_id = ?, is_sold = 1 WHERE id = ?").bind(paymentId, assignObj.codeId).run();
            codeAssignments.splice(codeAssignments.indexOf(assignObj), 1);
-           const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(item.product_id).first();
-           if (count) {
-             await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, item.product_id).run();
+           
+           if (item.variant_id) {
+             const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND variant_id = ? AND is_sold = 0").bind(item.product_id, item.variant_id).first();
+             await c.env.DB.prepare("UPDATE product_variants SET stock = ? WHERE id = ?").bind(count.c, item.variant_id).run();
+           } else {
+             const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND variant_id IS NULL AND is_sold = 0").bind(item.product_id).first();
+             if (count) {
+               await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, item.product_id).run();
+             }
            }
          }
       }
@@ -335,21 +346,25 @@ api.delete('/admin/variants/:id', adminMiddleware, async (c) => {
 // Admin: Redeem Codes
 api.get('/admin/products/:id/codes', adminMiddleware, async (c) => {
   const productId = c.req.param('id');
-  const { results } = await c.env.DB.prepare("SELECT c.*, p.invoice_id FROM redeem_codes c LEFT JOIN payments p ON c.payment_id = p.id WHERE c.product_id = ? ORDER BY c.id DESC").bind(productId).all();
+  const { results } = await c.env.DB.prepare("SELECT c.*, p.invoice_id, v.name as variant_name FROM redeem_codes c LEFT JOIN payments p ON c.payment_id = p.id LEFT JOIN product_variants v ON c.variant_id = v.id WHERE c.product_id = ? ORDER BY c.id DESC").bind(productId).all();
   return c.json({ codes: results });
 });
 
 api.post('/admin/products/:id/codes', adminMiddleware, async (c) => {
   const productId = c.req.param('id');
-  const { code } = await c.req.json();
+  const { code, variant_id } = await c.req.json();
   if (!code) return c.json({ error: 'Code is required' }, 400);
   
-  await c.env.DB.prepare("INSERT INTO redeem_codes (product_id, code) VALUES (?, ?)").bind(productId, code).run();
+  await c.env.DB.prepare("INSERT INTO redeem_codes (product_id, code, variant_id) VALUES (?, ?, ?)").bind(productId, code, variant_id || null).run();
   
-  // Update product stock to be the count of unsold codes (optional, but requested implicitly to sync)
-  const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(productId).first();
-  if (count) {
-    await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, productId).run();
+  if (variant_id) {
+    const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND variant_id = ? AND is_sold = 0").bind(productId, variant_id).first();
+    await c.env.DB.prepare("UPDATE product_variants SET stock = ? WHERE id = ?").bind(count.c, variant_id).run();
+  } else {
+    const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND variant_id IS NULL AND is_sold = 0").bind(productId).first();
+    if (count) {
+      await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, productId).run();
+    }
   }
   return c.json({ success: true });
 });
@@ -357,11 +372,17 @@ api.post('/admin/products/:id/codes', adminMiddleware, async (c) => {
 api.delete('/admin/products/:id/codes/:codeId', adminMiddleware, async (c) => {
   const productId = c.req.param('id');
   const codeId = c.req.param('codeId');
+  const codeRow = await c.env.DB.prepare("SELECT variant_id FROM redeem_codes WHERE id = ?").bind(codeId).first();
   await c.env.DB.prepare("DELETE FROM redeem_codes WHERE id = ? AND product_id = ? AND is_sold = 0").bind(codeId, productId).run();
   
-  const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(productId).first();
-  if (count) {
-    await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, productId).run();
+  if (codeRow && codeRow.variant_id) {
+    const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND variant_id = ? AND is_sold = 0").bind(productId, codeRow.variant_id).first();
+    await c.env.DB.prepare("UPDATE product_variants SET stock = ? WHERE id = ?").bind(count.c, codeRow.variant_id).run();
+  } else {
+    const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND variant_id IS NULL AND is_sold = 0").bind(productId).first();
+    if (count) {
+      await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, productId).run();
+    }
   }
   return c.json({ success: true });
 });
@@ -459,7 +480,7 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
   // PRODUCT_PURCHASE logic
   // Get invoice items
   const { results: items } = await c.env.DB.prepare(`
-    SELECT ii.product_id, i.user_id, ii.snapshot_name, ii.snapshot_description, ii.snapshot_duration_days, ii.quantity
+    SELECT ii.product_id, ii.variant_id, i.user_id, ii.snapshot_name, ii.snapshot_description, ii.snapshot_duration_days, ii.quantity
     FROM invoice_items ii
     JOIN invoices i ON ii.invoice_id = i.id
     WHERE ii.invoice_id = ?
@@ -467,11 +488,16 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
 
   // Validate stock of redeem codes first to prevent partial approval if something ran out
   const codeAssignments = [];
-  for (const item of items) {
+  for (const item of items as any[]) {
     if (item.snapshot_duration_days > 0) {
       // Need a redeem code
       for (let q = 0; q < item.quantity; q++) {
-        const code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id).first();
+        let code;
+        if (item.variant_id) {
+          code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND variant_id = ? AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id, item.variant_id).first();
+        } else {
+          code = await c.env.DB.prepare("SELECT id, code FROM redeem_codes WHERE product_id = ? AND variant_id IS NULL AND (is_sold = 2 OR is_sold = 0) ORDER BY is_sold DESC LIMIT 1").bind(item.product_id).first();
+        }
         if (!code) {
           return c.json({ error: `Not enough redeem codes available for ${item.snapshot_name}.` }, 400);
         }
@@ -494,16 +520,20 @@ api.post('/admin/payments/:id/approve', adminMiddleware, async (c) => {
       let assignedCode = null;
       
       if (item.snapshot_duration_days > 0) {
-         const assignObj = codeAssignments.find(ca => ca.item.product_id === item.product_id);
+         const assignObj = codeAssignments.find(ca => ca.item.product_id === item.product_id && ca.item.variant_id === item.variant_id);
          if (assignObj) {
            assignedCode = assignObj.codeStr;
            await c.env.DB.prepare("UPDATE redeem_codes SET payment_id = ?, is_sold = 1 WHERE id = ?").bind(paymentId, assignObj.codeId).run();
            codeAssignments.splice(codeAssignments.indexOf(assignObj), 1); // remove used
            
-           // Update remaining stock
-           const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND is_sold = 0").bind(item.product_id).first();
-           if (count) {
-             await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, item.product_id).run();
+           if (item.variant_id) {
+             const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND variant_id = ? AND is_sold = 0").bind(item.product_id, item.variant_id).first();
+             await c.env.DB.prepare("UPDATE product_variants SET stock = ? WHERE id = ?").bind(count.c, item.variant_id).run();
+           } else {
+             const count = await c.env.DB.prepare("SELECT COUNT(*) as c FROM redeem_codes WHERE product_id = ? AND variant_id IS NULL AND is_sold = 0").bind(item.product_id).first();
+             if (count) {
+               await c.env.DB.prepare("UPDATE products SET stock = ? WHERE id = ?").bind(count.c, item.product_id).run();
+             }
            }
          }
       }

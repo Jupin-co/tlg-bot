@@ -121,10 +121,12 @@ CREATE TABLE product_variants (
 CREATE TABLE redeem_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     product_id INTEGER NOT NULL,
+    variant_id INTEGER DEFAULT NULL,
     code TEXT NOT NULL,
     is_sold BOOLEAN DEFAULT 0,
     payment_id INTEGER,
     FOREIGN KEY(product_id) REFERENCES products(id),
+    FOREIGN KEY(variant_id) REFERENCES product_variants(id),
     FOREIGN KEY(payment_id) REFERENCES payments(id)
 );
 
