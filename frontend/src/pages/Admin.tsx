@@ -43,6 +43,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [newProdStock, setNewProdStock] = useState('-1');
   const [newProdCat, setNewProdCat] = useState('');
   const [newProdDesc, setNewProdDesc] = useState('');
+  const [newProdImage, setNewProdImage] = useState('');
   
   // Settings States
   const [cardHolder, setCardHolder] = useState('');
@@ -262,6 +263,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     setNewProdStock(p.stock.toString());
     setNewProdCat(p.category_id ? p.category_id.toString() : '');
     setNewProdDesc(p.description || '');
+    setNewProdImage(p.image_url || '');
     setShowProdModal(true);
   };
 
@@ -274,7 +276,35 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     setNewProdStock('-1');
     setNewProdCat('');
     setNewProdDesc('');
+    setNewProdImage('');
     setShowProdModal(true);
+  };
+
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        headers: { 'x-telegram-init-data': initData },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewProdImage(data.url);
+      } else {
+        showToast(data.error || "Upload failed", "error");
+      }
+    } catch {
+      showToast("Upload failed", "error");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const saveProduct = async () => {
@@ -293,7 +323,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           description: newProdDesc,
           category_id: newProdCat ? parseInt(newProdCat) : null,
           is_selling: true,
-          is_hidden: false
+          is_hidden: false,
+          image_url: newProdImage
         })
       });
       if (res.ok) {
@@ -513,9 +544,9 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             </div>
             <div className="drawer-body">
               {adminTabs.map(tab => (
-                <button 
+                <div 
                   key={tab.id}
-                  className={`drawer-item ${activeTab === tab.id ? 'active' : ''}`}
+                  className={`drawer-item cursor-pointer flex items-center gap-3 w-full p-4 rounded-[var(--radius-md)] transition-all ${activeTab === tab.id ? 'active bg-[var(--link-color)] text-white font-bold shadow-sm' : 'hover:bg-[var(--secondary-bg-color)]'}`}
                   onClick={() => {
                     setActiveTab(tab.id as any);
                     setIsMenuOpen(false);
@@ -523,7 +554,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                 >
                   <span className={`${activeTab === tab.id ? 'opacity-100 scale-110' : 'opacity-70'} transition-transform`}>{tab.icon}</span>
                   <span className="text-base">{tab.label}</span>
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -599,6 +630,23 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             <div className="flex flex-col gap-3">
               <input placeholder={t('name')} value={newProdName} onChange={(e) => setNewProdName(e.target.value)} />
               <input placeholder={t('description')} value={newProdDesc} onChange={(e) => setNewProdDesc(e.target.value)} />
+              
+              <div className="flex flex-col gap-2 p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
+                <span className="text-sm font-bold">{t('lbl_product_image', 'Product Image')}</span>
+                {newProdImage && (
+                  <div className="relative w-full h-32 rounded-lg overflow-hidden mb-2 border border-[var(--border-color)]">
+                    <img src={newProdImage} alt="Product Preview" className="w-full h-full object-cover" />
+                    <button 
+                      className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/80"
+                      onClick={() => setNewProdImage('')}
+                    ><X size={14} /></button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} className="text-sm flex-1" />
+                  {isUploading && <span className="text-xs text-hint">Uploading...</span>}
+                </div>
+              </div>
               <div className="flex gap-3">
                 <input type="number" placeholder={t('base_price')} value={newProdPrice} onChange={(e) => setNewProdPrice(e.target.value)} className="flex-1" />
                 <input placeholder="Currency (USD)" value={newProdCurrency} onChange={(e) => setNewProdCurrency(e.target.value)} className="flex-1" />
@@ -1114,16 +1162,18 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                       <div className="text-xs text-hint num-fix">{new Date(l.created_at).toLocaleString()}</div>
                     </div>
                     {l.metadata && (
-                      <pre className="text-xs font-mono text-[var(--text-color)] opacity-80 p-2 bg-[rgba(0,0,0,0.1)] rounded mt-2 whitespace-pre-wrap break-words" style={{maxHeight: '200px', overflowY: 'auto'}}>
-                        {(() => {
-                          try {
-                            const parsed = JSON.parse(l.metadata);
-                            return JSON.stringify(parsed, null, 2);
-                          } catch {
-                            return l.metadata;
-                          }
-                        })()}
-                      </pre>
+                      <div className="mt-2 w-full max-w-full overflow-hidden">
+                        <pre className="text-xs font-mono p-2 bg-[var(--bg-color)] border border-[var(--border-color)] rounded overflow-auto" style={{maxHeight: '200px', width: '100%'}}>
+                          {(() => {
+                            try {
+                              const parsed = JSON.parse(l.metadata);
+                              return JSON.stringify(parsed, null, 2);
+                            } catch {
+                              return l.metadata;
+                            }
+                          })()}
+                        </pre>
+                      </div>
                     )}
                   </div>
                 ))}

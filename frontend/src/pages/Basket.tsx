@@ -90,6 +90,11 @@ export default function Basket({ initData }: { initData: string }) {
         <div className="flex flex-col gap-4">
           {basket.map(item => (
             <div key={item.basket_id} className="card flex justify-between items-center">
+              {item.image_url && (
+                <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 mr-3 border border-[var(--border-color)]">
+                  <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                </div>
+              )}
               <div className="flex-1">
                 <h4 className="font-bold text-lg mb-1" style={{ margin: 0 }}>{item.name}</h4>
                 <div className="text-hint font-medium">
@@ -107,7 +112,7 @@ export default function Basket({ initData }: { initData: string }) {
           <div className="card mt-4 bg-[var(--secondary-bg-color)] border-none">
             <div className="flex justify-between items-center mb-6">
               <span className="text-hint font-semibold uppercase">{t('lbl_total', 'Total')}</span>
-              <span className="font-bold text-2xl text-[var(--button-color)]">s*{formatNumber(basket.reduce((a, b) => a + b.base_price * b.quantity, 0))} {basket[0]?.currency}
+              <span className="font-bold text-2xl text-[var(--button-color)]">{formatNumber(basket.reduce((a, b) => a + b.base_price * b.quantity, 0))} {t(basket[0]?.currency?.toLowerCase() || '', basket[0]?.currency)}
               </span>
             </div>
             <button className="w-full justify-center" style={{ padding: '16px', fontSize: '18px' }} onClick={handleCheckout}>

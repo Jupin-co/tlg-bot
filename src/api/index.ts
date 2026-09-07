@@ -296,18 +296,18 @@ api.post('/admin/categories', adminMiddleware, async (c) => {
 
 // Admin: Add/Edit Product
 api.post('/admin/products', adminMiddleware, async (c) => {
-  const { id, category_id, name, description, base_price, currency, duration_days, stock, is_selling, is_hidden } = await c.req.json();
+  const { id, category_id, name, description, base_price, currency, duration_days, stock, is_selling, is_hidden, image_url } = await c.req.json();
   const ccy = currency || 'USD';
   const duration = duration_days || 0;
   
   if (id) {
     await c.env.DB.prepare(
-      "UPDATE products SET category_id = ?, name = ?, description = ?, base_price = ?, currency = ?, duration_days = ?, stock = ?, is_selling = ?, is_hidden = ? WHERE id = ?"
-    ).bind(category_id, name, description || null, base_price, ccy, duration, stock || -1, is_selling ? 1 : 0, is_hidden ? 1 : 0, id).run();
+      "UPDATE products SET category_id = ?, name = ?, description = ?, base_price = ?, currency = ?, duration_days = ?, stock = ?, is_selling = ?, is_hidden = ?, image_url = ? WHERE id = ?"
+    ).bind(category_id, name, description || null, base_price, ccy, duration, stock || -1, is_selling ? 1 : 0, is_hidden ? 1 : 0, image_url || null, id).run();
   } else {
     await c.env.DB.prepare(
-      "INSERT INTO products (category_id, name, description, base_price, currency, duration_days, stock, is_selling, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).bind(category_id, name, description || null, base_price, ccy, duration, stock || -1, is_selling !== false ? 1 : 0, is_hidden ? 1 : 0).run();
+      "INSERT INTO products (category_id, name, description, base_price, currency, duration_days, stock, is_selling, is_hidden, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).bind(category_id, name, description || null, base_price, ccy, duration, stock || -1, is_selling !== false ? 1 : 0, is_hidden ? 1 : 0, image_url || null).run();
   }
   return c.json({ success: true });
 });
@@ -346,6 +346,35 @@ api.delete('/admin/products/:id/codes/:codeId', adminMiddleware, async (c) => {
   return c.json({ success: true });
 });
 
+
+// Admin: Upload Product Image
+api.post('/admin/upload-image', adminMiddleware, async (c) => {
+  const contentType = c.req.header('content-type') || '';
+  if (!contentType.includes('multipart/form-data')) {
+    return c.json({ error: 'Requires multipart/form-data' }, 400);
+  }
+  
+  const formData = await c.req.parseBody();
+  const file = formData['image'];
+  if (!file || !(file instanceof File)) {
+    return c.json({ error: 'Image file is required' }, 400);
+  }
+  
+  if (!file.type.startsWith('image/')) {
+    return c.json({ error: 'Only images are allowed' }, 400);
+  }
+  
+  const arrayBuffer = await file.arrayBuffer();
+  const uniqueId = crypto.randomUUID();
+  const fileKey = `products/${uniqueId}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+  
+  await c.env.RECEIPTS_BUCKET.put(fileKey, arrayBuffer, {
+    httpMetadata: { contentType: file.type }
+  });
+  
+  // Return the path
+  return c.json({ success: true, url: `/api/product-image/${fileKey.replace('products/', '')}` });
+});
 
 // --- ADMIN SETTINGS ---
 api.get('/admin/settings', adminMiddleware, async (c) => {
@@ -505,8 +534,18 @@ api.post('/basket/add', async (c) => {
   if (!user) return c.json({ error: 'No user data' }, 400);
   const { product_id } = await c.req.json();
   
-  // Check if exists
-  const exists = await c.env.DB.prepare("SELECT id FROM baskets WHERE user_id = ? AND product_id = ?").bind(user.id, product_id).first();
+  // Check product stock
+  const product = await c.env.DB.prepare("SELECT stock FROM products WHERE id = ?").bind(product_id).first();
+  if (!product) return c.json({ error: 'Product not found' }, 404);
+  
+  // Check if exists in basket
+  const exists = await c.env.DB.prepare("SELECT id, quantity FROM baskets WHERE user_id = ? AND product_id = ?").bind(user.id, product_id).first();
+  const currentQuantity = exists ? exists.quantity : 0;
+  
+  if (product.stock !== -1 && currentQuantity >= product.stock) {
+    return c.json({ error: 'Stock limit reached' }, 400);
+  }
+  
   if (exists) {
     await c.env.DB.prepare("UPDATE baskets SET quantity = quantity + 1 WHERE id = ?").bind(exists.id).run();
   } else {
@@ -652,20 +691,44 @@ api.get('/receipt-image/:key', async (c) => {
   return new Response(object.body, { headers });
 });
 
+api.get('/product-image/:key', async (c) => {
+  const key = c.req.param('key');
+  const fullKey = `products/${key}`;
+  const object = await c.env.RECEIPTS_BUCKET.get(fullKey);
+  if (!object) return c.json({ error: 'Not found' }, 404);
+  
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set('etag', object.httpEtag);
+  // Add aggressive cache headers for product images since they rarely change
+  headers.set('Cache-Control', 'public, max-age=31536000');
+  return new Response(object.body, { headers });
+});
+
 // --- USER PROFILE (PAYMENTS & INVENTORY) ---
 api.get('/payments', async (c) => {
   const user = c.get('user');
   if (!user) return c.json({ error: 'No user data' }, 400);
 
   const { results } = await c.env.DB.prepare(`
-    SELECT p.*, i.total_price, i.currency 
-    FROM payments p
-    JOIN invoices i ON p.invoice_id = i.id
+    SELECT i.id as invoice_id, i.total_price, i.currency, i.status as invoice_status, i.created_at, p.id as payment_id, p.status as payment_status
+    FROM invoices i
+    LEFT JOIN payments p ON p.invoice_id = i.id
     WHERE i.user_id = ?
-    ORDER BY p.created_at DESC
+    ORDER BY i.created_at DESC
   `).bind(user.id).all();
+
+  // Normalize status for frontend: prefer payment status if exists, otherwise invoice status
+  const normalizedResults = (results || []).map((r: any) => ({
+    id: r.payment_id || r.invoice_id,
+    invoice_id: r.invoice_id,
+    total_price: r.total_price,
+    currency: r.currency,
+    created_at: r.created_at,
+    status: r.payment_status || r.invoice_status
+  }));
   
-  return c.json({ payments: results });
+  return c.json({ payments: normalizedResults });
 });
 
 api.get('/inventory', async (c) => {
@@ -734,16 +797,24 @@ api.post('/admin/languages', adminMiddleware, async (c) => {
 
 // --- ADMIN USER MANAGEMENT ---
 api.get('/admin/migrate', async (c) => {
+  const migrations = [
+    `ALTER TABLE profiles ADD COLUMN national_code TEXT;`,
+    `ALTER TABLE profiles ADD COLUMN date_of_birth TEXT;`,
+    `ALTER TABLE profiles ADD COLUMN wallet_status TEXT DEFAULT 'UNVERIFIED';`,
+    `ALTER TABLE profiles ADD COLUMN wallet_balance INTEGER DEFAULT 0;`,
+    `ALTER TABLE invoices ADD COLUMN type TEXT DEFAULT 'PRODUCT_PURCHASE';`,
+    `ALTER TABLE products ADD COLUMN image_url TEXT;`
+  ];
+  const results = [];
+  for (const query of migrations) {
     try {
-      await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN national_code TEXT;`).run();
-      await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN date_of_birth TEXT;`).run();
-      await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN wallet_status TEXT DEFAULT 'UNVERIFIED';`).run();
-      await c.env.DB.prepare(`ALTER TABLE profiles ADD COLUMN wallet_balance INTEGER DEFAULT 0;`).run();
-      await c.env.DB.prepare(`ALTER TABLE invoices ADD COLUMN type TEXT DEFAULT 'PRODUCT_PURCHASE';`).run();
-      return c.json({ success: true });
+      await c.env.DB.prepare(query).run();
+      results.push({ query, status: 'success' });
     } catch (e: any) {
-      return c.json({ error: e.message });
+      results.push({ query, status: 'error', message: e.message });
     }
+  }
+  return c.json({ success: true, results });
 });
 
 // --- ADMIN KYC VERIFICATIONS ---
