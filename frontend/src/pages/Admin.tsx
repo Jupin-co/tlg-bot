@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { loadTranslations } from '../i18n';
-import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User, RefreshCw, CheckCircle, XCircle, Package } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -45,6 +45,14 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [newProdDesc, setNewProdDesc] = useState('');
   const [newProdImage, setNewProdImage] = useState('');
   
+  // Variants States
+  const [variants, setVariants] = useState<any[]>([]);
+  const [manageVariantsProductId, setManageVariantsProductId] = useState<number | null>(null);
+  const [newVarName, setNewVarName] = useState('');
+  const [newVarPriceMod, setNewVarPriceMod] = useState('0');
+  const [newVarStock, setNewVarStock] = useState('-1');
+  const [newVarDetails, setNewVarDetails] = useState('');
+  const [newVarImage, setNewVarImage] = useState('');
   // Settings States
   const [cardHolder, setCardHolder] = useState('');
   const [cardNumber, setCardNumber] = useState('');
@@ -94,6 +102,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       .then(data => {
         if (data.products) setProducts(data.products);
         if (data.categories) setCategories(data.categories);
+        if (data.variants) setVariants(data.variants);
       })
       .catch(() => showToast(t("toast_fetch_failed", "Failed to fetch data"), "error"));
   };
@@ -308,7 +317,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   };
 
   const saveProduct = async () => {
-    if (!newProdName || !newProdPrice) return;
+    if (!newProdName || !newProdPrice) {
+      showToast("Please enter name and price", "error");
+      return;
+    }
     try {
       const res = await fetch('/api/admin/products', {
         method: 'POST',
@@ -332,10 +344,11 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         setShowProdModal(false);
         fetchCatalog();
       } else {
-        showToast("Failed to save product", "error");
+        const errorData = await res.json().catch(() => ({}));
+        showToast(`Failed to save product: ${errorData.error || res.statusText}`, "error");
       }
-    } catch {
-      showToast("Error saving product", "error");
+    } catch (err: any) {
+      showToast(`Error saving product: ${err.message}`, "error");
     }
   };
 
@@ -346,6 +359,46 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       body: JSON.stringify({ ...p, is_hidden: !p.is_hidden })
     });
     fetchCatalog();
+  };
+
+  const saveVariant = async () => {
+    if (!newVarName || !manageVariantsProductId) return showToast("Please enter name", "error");
+    try {
+      const res = await fetch('/api/admin/variants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
+        body: JSON.stringify({ 
+          product_id: manageVariantsProductId,
+          name: newVarName, 
+          price_modifier: parseInt(newVarPriceMod) || 0, 
+          stock: parseInt(newVarStock) || -1,
+          details: newVarDetails,
+          image_url: newVarImage
+        })
+      });
+      if (res.ok) {
+        showToast("Variant saved", "success");
+        setNewVarName('');
+        setNewVarPriceMod('0');
+        setNewVarStock('-1');
+        setNewVarDetails('');
+        setNewVarImage('');
+        fetchCatalog();
+      } else showToast("Failed", "error");
+    } catch { showToast("Error", "error"); }
+  };
+
+  const deleteVariant = async (id: number) => {
+    try {
+      const res = await fetch(`/api/admin/variants/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-telegram-init-data': initData }
+      });
+      if (res.ok) {
+        showToast("Variant deleted", "success");
+        fetchCatalog();
+      }
+    } catch { showToast("Error", "error"); }
   };
 
   const saveSettings = async () => {
@@ -595,6 +648,9 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                         <button onClick={() => openManageCodes(p.id)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
                           <Key size={12} /> {t("btn_codes", "Codes")}
                         </button>
+                        <button onClick={() => setManageVariantsProductId(p.id)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
+                          <Package size={12} /> {t("btn_variants", "Variants")}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -722,7 +778,71 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         </div>
       )}
 
+      {/* Variants Modal */}
+      {manageVariantsProductId !== null && (
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div className="card w-full max-w-sm flex flex-col" style={{ maxHeight: "90vh", overflow: "hidden" }}>
+            <div className="flex justify-between items-center mb-4 shrink-0">
+              <h3 className="font-bold m-0">{t("btn_variants", "Variants")}</h3>
+              <button onClick={() => setManageVariantsProductId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
+            </div>
+            
+            <div className="flex flex-col gap-2 mb-4 shrink-0 p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
+              <h4 className="font-bold text-sm m-0">Add New Variant</h4>
+              <input className="w-full text-sm p-2" placeholder={t('name')} value={newVarName} onChange={e => setNewVarName(e.target.value)} />
+              <input type="number" className="w-full text-sm p-2" placeholder="Price Modifier (e.g. +10, -5)" value={newVarPriceMod} onChange={e => setNewVarPriceMod(e.target.value)} />
+              <input type="number" className="w-full text-sm p-2" placeholder={t('lbl_stock', 'Stock')} value={newVarStock} onChange={e => setNewVarStock(e.target.value)} />
+              <input className="w-full text-sm p-2" placeholder={t('description')} value={newVarDetails} onChange={e => setNewVarDetails(e.target.value)} />
+              <div className="flex flex-col gap-2 p-2 bg-[var(--bg-color)] rounded border border-[var(--border-color)]">
+                <span className="text-xs font-bold">{t('lbl_product_image', 'Image')}</span>
+                {newVarImage && (
+                  <div className="relative w-full h-24 rounded overflow-hidden">
+                    <img src={newVarImage} alt="Variant" className="w-full h-full object-cover" />
+                    <button className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full" onClick={() => setNewVarImage('')}><X size={12} /></button>
+                  </div>
+                )}
+                <input type="file" accept="image/*" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const formData = new FormData();
+                  formData.append('image', file);
+                  const res = await fetch('/api/admin/upload-image', { method: 'POST', body: formData, headers: { 'x-telegram-init-data': initData } });
+                  if (res.ok) {
+                    const data = await res.json();
+                    setNewVarImage(data.url);
+                  }
+                }} className="text-xs w-full" />
+              </div>
+              <button className="w-full mt-2" onClick={saveVariant}>{t('save')}</button>
+            </div>
 
+            <div className="flex-1 overflow-y-auto mt-2 pr-1">
+              {variants.filter(v => v.product_id === manageVariantsProductId).length === 0 && <p className="text-hint text-sm">No variants added yet.</p>}
+              <div className="flex flex-col gap-2">
+                {variants.filter(v => v.product_id === manageVariantsProductId).map(v => (
+                  <div key={v.id} className="flex flex-col gap-2 p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col gap-1 w-full overflow-hidden">
+                        <div className="flex items-center gap-2">
+                          <strong className="font-bold text-sm truncate">{v.name}</strong>
+                          <span className="text-xs px-2 py-0.5 bg-[rgba(52,199,89,0.1)] text-success rounded font-bold">{v.price_modifier > 0 ? '+' : ''}{v.price_modifier}</span>
+                        </div>
+                        <p className="text-xs text-hint m-0">{v.details}</p>
+                      </div>
+                      <button onClick={() => deleteVariant(v.id)} className="danger py-1 px-3 text-xs rounded-full shrink-0 ml-2">{t("btn_delete", "Delete")}</button>
+                    </div>
+                    {v.image_url && (
+                      <div className="w-full h-20 rounded overflow-hidden mt-1 border border-[var(--border-color)]">
+                        <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {activeTab === 'wallet-codes' && (
         <div className="flex flex-col gap-4">
@@ -1057,21 +1177,21 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       )}
 
       {activeTab === 'roles' && (
-        <div className="section-card glass-panel fade-in">
+        <div className="section-card fade-in">
           <h2 className="text-lg font-bold mb-4">{t('tab_roles', 'Roles & Permissions')}</h2>
           
           <div className="card">
-            <h3 className="font-bold mb-3">Create New Role</h3>
+            <h3 className="font-bold mb-3">{t('create_new_role', 'Create New Role')}</h3>
             <div className="flex gap-2">
               <input 
                 type="text" 
                 className="input-field flex-1" 
-                placeholder="e.g. SUPPORT_ADMIN"
+                placeholder={t('role_placeholder', 'e.g. SUPPORT_ADMIN')}
                 value={newRoleName}
                 onChange={e => setNewRoleName(e.target.value)}
               />
               <button onClick={handleCreateRole} disabled={!newRoleName}>
-                <Plus size={18} /> Create
+                <Plus size={18} /> {t('btn_create', 'Create')}
               </button>
             </div>
           </div>
@@ -1154,23 +1274,25 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
       {viewLogsUserId !== null && (
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div className="card w-full" style={{ maxWidth: "500px", maxHeight: "90vh", display: "flex", flexDirection: "column", position: "relative" }}>
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-bold m-0">User Logs <span className="text-sm font-normal text-hint">({viewLogsUserId})</span></h3>
-              <button onClick={() => setViewLogsUserId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
+          <div className="card w-full flex flex-col p-4" style={{ maxWidth: "500px", maxHeight: "90vh", position: "relative" }}>
+            <div className="flex justify-between items-center mb-4 shrink-0">
+              <h3 className="font-bold m-0 flex items-center gap-2">
+                User Logs <span className="text-xs font-normal bg-[var(--secondary-bg-color)] px-2 py-1 rounded">({viewLogsUserId})</span>
+              </h3>
+              <button onClick={() => setViewLogsUserId(null)} className="secondary p-2 rounded-full border-none flex items-center justify-center"><X size={16} /></button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', marginTop: '8px', paddingRight: '8px', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', minHeight: '0' }}>
-              {userLogs.length === 0 && <p className="text-hint">No logs found.</p>}
-              <div className="flex flex-col gap-2">
+            <div className="flex-1 overflow-y-auto pr-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+              {userLogs.length === 0 && <p className="text-hint text-center py-4">No logs found.</p>}
+              <div className="flex flex-col gap-3">
                 {userLogs.map(l => (
-                  <div key={l.id} className="p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
-                    <div className="flex justify-between items-start mb-1">
-                      <div className="font-bold text-sm">{l.action}</div>
-                      <div className="text-xs text-hint num-fix">{new Date(l.created_at).toLocaleString()}</div>
+                  <div key={l.id} className="p-3 bg-[var(--secondary-bg-color)] rounded-xl border border-[var(--border-color)]">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-sm bg-[var(--bg-color)] px-2 py-1 rounded shadow-sm">{l.action}</span>
+                      <span className="text-xs text-hint num-fix font-mono">{new Date(l.created_at).toLocaleString()}</span>
                     </div>
                     {l.metadata && (
-                      <div className="mt-2 w-full">
-                        <pre className="text-xs font-mono p-2 bg-[var(--bg-color)] border border-[var(--border-color)] rounded overflow-y-auto" style={{maxHeight: '200px', width: '100%', whiteSpace: 'pre-wrap', wordBreak: 'break-all'}}>
+                      <div className="mt-2 w-full overflow-hidden">
+                        <div className="text-[11px] font-mono p-2 bg-[var(--bg-color)] border border-[var(--border-color)] rounded-lg overflow-x-auto" style={{maxHeight: '150px', overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
                           {(() => {
                             try {
                               const parsed = JSON.parse(l.metadata);
@@ -1179,7 +1301,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                               return l.metadata;
                             }
                           })()}
-                        </pre>
+                        </div>
                       </div>
                     )}
                   </div>

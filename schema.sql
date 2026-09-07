@@ -113,6 +113,8 @@ CREATE TABLE product_variants (
     name TEXT NOT NULL,
     price_modifier INTEGER DEFAULT 0,
     stock INTEGER DEFAULT -1,
+    details TEXT,
+    image_url TEXT,
     FOREIGN KEY(product_id) REFERENCES products(id)
 );
 
@@ -137,10 +139,12 @@ CREATE TABLE baskets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL,
+    variant_id INTEGER,
     quantity INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(telegram_id),
-    FOREIGN KEY(product_id) REFERENCES products(id)
+    FOREIGN KEY(product_id) REFERENCES products(id),
+    FOREIGN KEY(variant_id) REFERENCES product_variants(id)
 );
 
 CREATE TABLE invoices (
@@ -158,13 +162,16 @@ CREATE TABLE invoices (
 CREATE TABLE invoice_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     invoice_id INTEGER NOT NULL,
-    product_id INTEGER,
+    product_id INTEGER NOT NULL,
+    variant_id INTEGER,
+    quantity INTEGER DEFAULT 1,
+    snapshot_price INTEGER NOT NULL,
     snapshot_name TEXT NOT NULL,
     snapshot_description TEXT,
-    snapshot_price INTEGER NOT NULL,
     snapshot_duration_days INTEGER DEFAULT 0,
-    quantity INTEGER DEFAULT 1,
-    FOREIGN KEY(invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+    FOREIGN KEY(invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+    FOREIGN KEY(product_id) REFERENCES products(id),
+    FOREIGN KEY(variant_id) REFERENCES product_variants(id)
 );
 
 CREATE TABLE payments (
