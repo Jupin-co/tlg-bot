@@ -32,18 +32,18 @@ export default function Basket({ initData }: { initData: string }) {
     fetchBasket();
   };
 
-  const handleAdd = async (productId: number) => {
+  const handleAdd = async (productId: number, variantId: number | null) => {
     await fetch('/api/basket/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
-      body: JSON.stringify({ product_id: productId })
+      body: JSON.stringify({ product_id: productId, variant_id: variantId })
     });
     fetchBasket();
   };
 
   const handleCheckout = async () => {
     try {
-      const totalValue = basket.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const totalValue = basket.reduce((sum, item) => sum + (item.final_price * item.quantity), 0);
       fetch('/api/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
@@ -52,7 +52,7 @@ export default function Basket({ initData }: { initData: string }) {
           details: { 
             total_items: basket.length,
             total_value: totalValue,
-            items: basket.map(b => ({ id: b.product_id, qty: b.quantity, price: b.price })),
+            items: basket.map(b => ({ id: b.product_id, qty: b.quantity, price: b.final_price })),
             user_agent: navigator.userAgent
           } 
         })
@@ -92,19 +92,19 @@ export default function Basket({ initData }: { initData: string }) {
             <div key={item.basket_id} className="card flex justify-between items-center">
               {item.image_url && (
                 <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 mr-3 border border-[var(--border-color)]">
-                  <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                  <img src={item.image_url} alt={item.display_name} className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="flex-1">
-                <h4 className="font-bold text-lg mb-1" style={{ margin: 0 }}>{item.name}</h4>
+                <h4 className="font-bold text-lg mb-1" style={{ margin: 0 }}>{item.display_name}</h4>
                 <div className="text-hint font-medium">
-                  <span>{formatNumber(item.base_price)} {t(item.currency.toLowerCase(), item.currency) as string}</span>
+                  <span>{formatNumber(item.final_price)} {t(item.currency.toLowerCase(), item.currency) as string}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-xl p-1 border border-[var(--border-color)]">
                 <button className="secondary p-2 rounded-lg border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => handleDecrement(item.basket_id)}>-</button>
                 <span className="font-bold min-w-[20px] text-center">{formatNumber(item.quantity)}</span>
-                <button className="secondary p-2 rounded-lg border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => handleAdd(item.product_id)} disabled={item.stock !== -1 && item.quantity >= item.stock} style={{ opacity: (item.stock !== -1 && item.quantity >= item.stock) ? 0.5 : 1 }}>+</button>
+                <button className="secondary p-2 rounded-lg border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => handleAdd(item.product_id, item.variant_id)} disabled={item.stock !== -1 && item.quantity >= item.stock} style={{ opacity: (item.stock !== -1 && item.quantity >= item.stock) ? 0.5 : 1 }}>+</button>
               </div>
             </div>
           ))}
@@ -112,7 +112,7 @@ export default function Basket({ initData }: { initData: string }) {
           <div className="card mt-4 bg-[var(--secondary-bg-color)] border-none">
             <div className="flex justify-between items-center mb-6">
               <span className="text-hint font-semibold uppercase">{t('lbl_total', 'Total')}</span>
-              <span className="font-bold text-2xl text-[var(--button-color)]">{formatNumber(basket.reduce((a, b) => a + b.base_price * b.quantity, 0))} {t(basket[0]?.currency?.toLowerCase() || '', basket[0]?.currency) as string}
+              <span className="font-bold text-2xl text-[var(--button-color)]">{formatNumber(basket.reduce((a, b) => a + b.final_price * b.quantity, 0))} {t(basket[0]?.currency?.toLowerCase() || '', basket[0]?.currency) as string}
               </span>
             </div>
             <button className="w-full justify-center" style={{ padding: '16px', fontSize: '18px' }} onClick={handleCheckout}>

@@ -269,16 +269,18 @@ api.post('/log', async (c) => {
 api.get('/catalog', async (c) => {
   const { results: categories } = await c.env.DB.prepare("SELECT * FROM categories WHERE is_active = 1").all();
   const { results: products } = await c.env.DB.prepare("SELECT * FROM products WHERE is_hidden = 0").all();
+  const { results: variants } = await c.env.DB.prepare("SELECT * FROM product_variants").all();
   
-  return c.json({ categories, products });
+  return c.json({ categories, products, variants });
 });
 
 // Admin: Get full catalog
 api.get('/admin/catalog', adminMiddleware, async (c) => {
   const { results: categories } = await c.env.DB.prepare("SELECT * FROM categories").all();
   const { results: products } = await c.env.DB.prepare("SELECT * FROM products").all();
+  const { results: variants } = await c.env.DB.prepare("SELECT * FROM product_variants").all();
   
-  return c.json({ categories, products });
+  return c.json({ categories, products, variants });
 });
 
 // Admin: Add/Edit Category
@@ -309,6 +311,24 @@ api.post('/admin/products', adminMiddleware, async (c) => {
       "INSERT INTO products (category_id, name, description, base_price, currency, duration_days, stock, is_selling, is_hidden, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     ).bind(category_id, name, description || null, base_price, ccy, duration, stock || -1, is_selling !== false ? 1 : 0, is_hidden ? 1 : 0, image_url || null).run();
   }
+  return c.json({ success: true });
+});
+
+api.post('/admin/variants', adminMiddleware, async (c) => {
+  const { id, product_id, name, price_modifier, stock, details, image_url } = await c.req.json();
+  if (id) {
+    await c.env.DB.prepare("UPDATE product_variants SET name = ?, price_modifier = ?, stock = ?, details = ?, image_url = ? WHERE id = ?")
+      .bind(name, price_modifier || 0, stock || -1, details || null, image_url || null, id).run();
+  } else {
+    await c.env.DB.prepare("INSERT INTO product_variants (product_id, name, price_modifier, stock, details, image_url) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(product_id, name, price_modifier || 0, stock || -1, details || null, image_url || null).run();
+  }
+  return c.json({ success: true });
+});
+
+api.delete('/admin/variants/:id', adminMiddleware, async (c) => {
+  const id = c.req.param('id');
+  await c.env.DB.prepare("DELETE FROM product_variants WHERE id = ?").bind(id).run();
   return c.json({ success: true });
 });
 
@@ -521,35 +541,58 @@ api.get('/basket', async (c) => {
   if (!user) return c.json({ error: 'No user data' }, 400);
 
   const { results } = await c.env.DB.prepare(`
-    SELECT b.id as basket_id, b.quantity, p.* 
+    SELECT b.id as basket_id, b.quantity, b.variant_id, p.*,
+           pv.name as variant_name, pv.price_modifier, pv.image_url as variant_image
     FROM baskets b 
     JOIN products p ON b.product_id = p.id 
+    LEFT JOIN product_variants pv ON b.variant_id = pv.id
     WHERE b.user_id = ?
   `).bind(user.id).all();
-  return c.json({ basket: results });
+  
+  const basket = results.map((row: any) => ({
+    ...row,
+    final_price: row.base_price + (row.price_modifier || 0),
+    display_name: row.variant_name ? `${row.name} - ${row.variant_name}` : row.name,
+    display_image: row.variant_image || row.image_url
+  }));
+  
+  return c.json({ basket });
 });
 
 api.post('/basket/add', async (c) => {
   const user = c.get('user');
   if (!user) return c.json({ error: 'No user data' }, 400);
-  const { product_id } = await c.req.json();
+  const { product_id, variant_id } = await c.req.json();
   
   // Check product stock
   const product = await c.env.DB.prepare("SELECT stock FROM products WHERE id = ?").bind(product_id).first();
   if (!product) return c.json({ error: 'Product not found' }, 404);
   
+  let stockLimit = product.stock;
+  if (variant_id) {
+    const variant = await c.env.DB.prepare("SELECT stock FROM product_variants WHERE id = ?").bind(variant_id).first();
+    if (variant && variant.stock !== -1) stockLimit = variant.stock;
+  }
+  
   // Check if exists in basket
-  const exists = await c.env.DB.prepare("SELECT id, quantity FROM baskets WHERE user_id = ? AND product_id = ?").bind(user.id, product_id).first();
+  const query = variant_id 
+    ? "SELECT id, quantity FROM baskets WHERE user_id = ? AND product_id = ? AND variant_id = ?"
+    : "SELECT id, quantity FROM baskets WHERE user_id = ? AND product_id = ? AND variant_id IS NULL";
+    
+  const exists = variant_id 
+    ? await c.env.DB.prepare(query).bind(user.id, product_id, variant_id).first()
+    : await c.env.DB.prepare(query).bind(user.id, product_id).first();
+    
   const currentQuantity = exists ? exists.quantity : 0;
   
-  if (product.stock !== -1 && currentQuantity >= product.stock) {
+  if (stockLimit !== -1 && currentQuantity >= stockLimit) {
     return c.json({ error: 'Stock limit reached' }, 400);
   }
   
   if (exists) {
     await c.env.DB.prepare("UPDATE baskets SET quantity = quantity + 1 WHERE id = ?").bind(exists.id).run();
   } else {
-    await c.env.DB.prepare("INSERT INTO baskets (user_id, product_id) VALUES (?, ?)").bind(user.id, product_id).run();
+    await c.env.DB.prepare("INSERT INTO baskets (user_id, product_id, variant_id) VALUES (?, ?, ?)").bind(user.id, product_id, variant_id || null).run();
   }
   return c.json({ success: true });
 });
@@ -584,9 +627,11 @@ api.post('/invoice/create', async (c) => {
   if (!user) return c.json({ error: 'No user data' }, 400);
 
   const { results: basketItems } = await c.env.DB.prepare(`
-    SELECT b.id as basket_id, b.quantity, p.* 
+    SELECT b.id as basket_id, b.quantity, b.variant_id, p.*,
+           pv.name as variant_name, pv.price_modifier, pv.stock as variant_stock, pv.details as variant_details
     FROM baskets b 
     JOIN products p ON b.product_id = p.id 
+    LEFT JOIN product_variants pv ON b.variant_id = pv.id
     WHERE b.user_id = ?
   `).bind(user.id).all();
 
@@ -596,13 +641,15 @@ api.post('/invoice/create', async (c) => {
 
   // Validate stock
   for (const item of basketItems as any[]) {
-    if (item.stock === 0) {
-      return c.json({ error: `Product ${item.name} is out of stock.` }, 400);
+    const stock = item.variant_id ? item.variant_stock : item.stock;
+    if (stock === 0 || (stock !== -1 && item.quantity > stock)) {
+      const n = item.variant_name ? `${item.name} - ${item.variant_name}` : item.name;
+      return c.json({ error: `Product ${n} is out of stock.` }, 400);
     }
   }
 
   const currency = (basketItems[0] as any).currency;
-  const totalPrice = basketItems.reduce((acc, item: any) => acc + (item.base_price * item.quantity), 0);
+  const totalPrice = basketItems.reduce((acc, item: any) => acc + ((item.base_price + (item.price_modifier || 0)) * item.quantity), 0);
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 mins from now
 
   // Create invoice
@@ -615,11 +662,13 @@ api.post('/invoice/create', async (c) => {
 
   // Create invoice items
   for (const item of basketItems as any[]) {
+    const name = item.variant_name ? `${item.name} - ${item.variant_name}` : item.name;
+    const finalPrice = item.base_price + (item.price_modifier || 0);
     await c.env.DB.prepare(`
-      INSERT INTO invoice_items (invoice_id, product_id, snapshot_name, snapshot_description, snapshot_price, snapshot_duration_days, quantity)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO invoice_items (invoice_id, product_id, variant_id, snapshot_name, snapshot_description, snapshot_price, snapshot_duration_days, quantity)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      invoiceId, item.id, item.name, item.description || '', item.base_price, item.duration_days, item.quantity
+      invoiceId, item.id, item.variant_id || null, name, (item.variant_details || item.description || ''), finalPrice, item.duration_days, item.quantity
     ).run();
   }
 
@@ -736,11 +785,12 @@ api.get('/inventory', async (c) => {
   if (!user) return c.json({ error: 'No user data' }, 400);
 
     const { results } = await c.env.DB.prepare(`
-      SELECT ui.*, p.image_url 
+      SELECT ui.*, COALESCE(pv.image_url, p.image_url) as image_url 
       FROM user_inventory ui
       LEFT JOIN payments pay ON pay.id = ui.payment_id
       LEFT JOIN invoice_items ii ON ii.invoice_id = pay.invoice_id AND ii.snapshot_name = ui.snapshot_name
       LEFT JOIN products p ON p.id = ii.product_id
+      LEFT JOIN product_variants pv ON pv.id = ii.variant_id
       WHERE ui.user_id = ?
       GROUP BY ui.id
       ORDER BY ui.access_starts_at DESC

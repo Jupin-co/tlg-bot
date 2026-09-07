@@ -75,9 +75,7 @@ a {
 a:hover { opacity: 0.8; }
 
 button {
-  background-color: color-mix(in srgb, var(--button-color) 85%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background-color: var(--button-color);
   color: var(--button-text-color);
   border: 1px solid transparent;
   border-radius: var(--radius-full); /* pill shape is very modern */
@@ -141,9 +139,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 .card {
-  background-color: color-mix(in srgb, var(--card-bg-color) 75%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background-color: var(--card-bg-color);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 16px;
@@ -269,9 +265,7 @@ input:focus, textarea:focus, select:focus {
   padding: 12px 0;
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: 50;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background-color: color-mix(in srgb, var(--card-bg-color) 85%, transparent);
+  background-color: var(--card-bg-color);
 }
 
 .nav-item {
@@ -304,7 +298,7 @@ h1, h2, h3, h4, h5, h6 {
 .container {
   max-width: 600px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 12px;
   padding-bottom: 120px;
 }
 

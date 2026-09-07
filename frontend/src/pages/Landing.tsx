@@ -8,10 +8,12 @@ export default function Landing({ initData }: { initData: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [products, setProducts] = useState<any[]>([]);
+  const [variants, setVariants] = useState<any[]>([]);
   const [basketItems, setBasketItems] = useState<any[]>([]);
   const [basketCount, setBasketCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('none'); // none, price_asc, price_desc
+  const [selectedProductForVariant, setSelectedProductForVariant] = useState<any | null>(null);
 
   const fetchBasketCount = () => {
     fetch('/api/basket', { headers: { 'x-telegram-init-data': initData } })
@@ -35,6 +37,7 @@ export default function Landing({ initData }: { initData: string }) {
     .then(r => r.json())
     .then(data => {
       if (data.products) setProducts(data.products);
+      if (data.variants) setVariants(data.variants);
       
       // Log visit
       fetch('/api/log', {
@@ -73,9 +76,16 @@ export default function Landing({ initData }: { initData: string }) {
     } catch { console.error('error'); }
   };
 
-  const addToBasket = async (productId: number) => {
+  const addToBasket = async (productId: number, variantId?: number) => {
     try {
       const product = products.find(p => p.id === productId);
+      const productVariants = variants.filter(v => v.product_id === productId);
+
+      if (!variantId && productVariants.length > 0) {
+        setSelectedProductForVariant(product);
+        return; // Open modal instead of adding immediately
+      }
+
       fetch('/api/log', {
         method: 'POST',
         headers: {
@@ -86,6 +96,7 @@ export default function Landing({ initData }: { initData: string }) {
           action: 'ADD_TO_BASKET', 
           details: { 
             product_id: productId,
+            variant_id: variantId,
             product_name: product?.name,
             product_price: product?.price,
             user_agent: navigator.userAgent
@@ -98,9 +109,10 @@ export default function Landing({ initData }: { initData: string }) {
           'Content-Type': 'application/json',
           'x-telegram-init-data': initData
         },
-        body: JSON.stringify({ product_id: productId })
+        body: JSON.stringify({ product_id: productId, variant_id: variantId })
       });
       if (res.ok) {
+        setSelectedProductForVariant(null);
         fetchBasketCount();
       }
     } catch {
@@ -194,13 +206,23 @@ export default function Landing({ initData }: { initData: string }) {
                   </span>
                 ) : (
                   (() => {
-                    const inBasket = basketItems.find(i => i.product_id === p.id);
-                    if (inBasket) {
+                    const pVariants = variants.filter(v => v.product_id === p.id);
+                    const productBasketItems = basketItems.filter(i => i.product_id === p.id);
+                    const totalQuantity = productBasketItems.reduce((sum, i) => sum + i.quantity, 0);
+
+                    if (totalQuantity > 0) {
                       return (
                         <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-full p-1 border border-[var(--border-color)]">
-                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => handleDecrement(inBasket.basket_id)}>-</button>
-                          <span className="font-bold min-w-[20px] text-center">{formatNumber(inBasket.quantity)}</span>
-                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id)} disabled={p.stock !== -1 && inBasket.quantity >= p.stock} style={{ opacity: (p.stock !== -1 && inBasket.quantity >= p.stock) ? 0.5 : 1 }}>+</button>
+                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => {
+                            if (productBasketItems.length === 1) {
+                              handleDecrement(productBasketItems[0].basket_id);
+                            } else {
+                              // If multiple variants, just go to basket or decrement the last added
+                              handleDecrement(productBasketItems[productBasketItems.length - 1].basket_id);
+                            }
+                          }}>-</button>
+                          <span className="font-bold min-w-[20px] text-center">{formatNumber(totalQuantity)}</span>
+                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id)} disabled={p.stock !== -1 && totalQuantity >= p.stock} style={{ opacity: (p.stock !== -1 && totalQuantity >= p.stock) ? 0.5 : 1 }}>+</button>
                         </div>
                       );
                     } else {
@@ -217,6 +239,38 @@ export default function Landing({ initData }: { initData: string }) {
           ))
         )}
       </div>
+
+      {selectedProductForVariant && (
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div className="card w-full max-w-sm flex flex-col" style={{ maxHeight: "90vh", overflow: "hidden" }}>
+            <div className="flex justify-between items-center mb-4 shrink-0">
+              <h3 className="font-bold m-0">{selectedProductForVariant.name} - Select Variant</h3>
+              <button onClick={() => setSelectedProductForVariant(null)} className="secondary p-2 rounded-full border-none"><span style={{fontSize: '18px', lineHeight: 1}}>×</span></button>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-1">
+              <div className="flex flex-col gap-3">
+                {variants.filter(v => v.product_id === selectedProductForVariant.id).map(v => (
+                  <div key={v.id} className="card bg-[var(--secondary-bg-color)] border border-[var(--border-color)] m-0 p-3 flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <strong className="font-bold">{v.name}</strong>
+                      <span className="font-bold text-[var(--link-color)]">{v.price_modifier > 0 ? '+' : ''}{formatNumber(v.price_modifier)} {selectedProductForVariant.currency}</span>
+                    </div>
+                    {v.details && <p className="text-xs text-hint m-0">{v.details}</p>}
+                    {v.image_url && (
+                      <div className="w-full h-24 rounded-lg overflow-hidden border border-[var(--border-color)]">
+                        <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <button className="mt-2 text-sm" onClick={() => addToBasket(selectedProductForVariant.id, v.id)}>
+                      {t('btn_add_to_basket', 'Add to Basket')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
