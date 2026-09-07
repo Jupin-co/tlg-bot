@@ -48,6 +48,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   // Variants States
   const [variants, setVariants] = useState<any[]>([]);
   const [manageVariantsProductId, setManageVariantsProductId] = useState<number | null>(null);
+  const [editVariantId, setEditVariantId] = useState<number | null>(null);
   const [newVarName, setNewVarName] = useState('');
   const [newVarPriceMod, setNewVarPriceMod] = useState('0');
   const [newVarStock, setNewVarStock] = useState('-1');
@@ -377,6 +378,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
         body: JSON.stringify({ 
+          id: editVariantId,
           product_id: manageVariantsProductId,
           name: newVarName, 
           price_modifier: priceMod, 
@@ -387,6 +389,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       });
       if (res.ok) {
         showToast("Variant saved", "success");
+        setEditVariantId(null);
         setNewVarName('');
         setNewVarPriceMod('0');
         setNewVarStock('-1');
@@ -395,6 +398,17 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         fetchCatalog();
       } else showToast("Failed", "error");
     } catch { showToast("Error", "error"); }
+  };
+
+  const editVariant = (v: any) => {
+    const parentProduct = products.find(p => p.id === manageVariantsProductId);
+    const basePrice = parentProduct?.base_price || 0;
+    setEditVariantId(v.id);
+    setNewVarName(v.name);
+    setNewVarPriceMod((basePrice + v.price_modifier).toString());
+    setNewVarStock(v.stock.toString());
+    setNewVarDetails(v.details || '');
+    setNewVarImage(v.image_url || '');
   };
 
   const deleteVariant = async (id: number) => {
@@ -793,11 +807,28 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           <div className="card w-full max-w-sm flex flex-col" style={{ maxHeight: "90vh", overflowY: "auto" }}>
             <div className="flex justify-between items-center mb-4 shrink-0">
               <h3 className="font-bold m-0">{t("btn_variants", "Variants")}</h3>
-              <button onClick={() => setManageVariantsProductId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
+              <button onClick={() => { setManageVariantsProductId(null); setEditVariantId(null); }} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
             </div>
             
             <div className="flex flex-col gap-2 mb-4 shrink-0 p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
-              <h4 className="font-bold text-sm m-0">Add New Variant</h4>
+              <div className="flex justify-between items-center">
+                <h4 className="font-bold text-sm m-0">{editVariantId ? "Edit Variant" : "Add New Variant"}</h4>
+                {editVariantId && (
+                  <button 
+                    onClick={() => {
+                      setEditVariantId(null);
+                      setNewVarName('');
+                      setNewVarPriceMod('0');
+                      setNewVarStock('-1');
+                      setNewVarDetails('');
+                      setNewVarImage('');
+                    }} 
+                    className="text-xs text-[var(--link-color)] hover:underline"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
               <input className="w-full text-sm p-2" placeholder={t('name')} value={newVarName} onChange={e => setNewVarName(e.target.value)} />
               <input type="number" className="w-full text-sm p-2" placeholder="Price (Leave empty for product default price)" value={newVarPriceMod} onChange={e => setNewVarPriceMod(e.target.value)} />
               <input type="number" className="w-full text-sm p-2" placeholder={t('lbl_stock', 'Stock')} value={newVarStock} onChange={e => setNewVarStock(e.target.value)} />
@@ -842,7 +873,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                           </div>
                           <p className="text-xs text-hint m-0">{v.details}</p>
                         </div>
-                        <button onClick={() => deleteVariant(v.id)} className="danger py-1 px-3 text-xs rounded-full shrink-0 ml-2">Delete</button>
+                        <div className="flex flex-col gap-1 shrink-0 ml-2">
+                          <button onClick={() => editVariant(v)} className="secondary py-1 px-3 text-xs rounded-full">Edit</button>
+                          <button onClick={() => deleteVariant(v.id)} className="danger py-1 px-3 text-xs rounded-full">Delete</button>
+                        </div>
                       </div>
                       {v.image_url && (
                         <div className="w-full h-20 rounded overflow-hidden mt-1 border border-[var(--border-color)]">
