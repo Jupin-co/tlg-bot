@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { loadTranslations } from '../i18n';
-import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User, RefreshCw, CheckCircle, XCircle, Package } from 'lucide-react';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User, RefreshCw, CheckCircle, XCircle, Package, Trash2 } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -723,9 +723,10 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                   <div className="relative w-full h-32 rounded-lg overflow-hidden mb-2 border border-[var(--border-color)]">
                     <img src={newProdImage} alt="Product Preview" className="w-full h-full object-cover" />
                     <button 
-                      className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/80"
+                      className="absolute top-2 right-2 p-2 bg-red-500/80 backdrop-blur-sm text-white rounded-full hover:bg-red-600 transition-colors shadow-md"
                       onClick={() => setNewProdImage('')}
-                    ><X size={14} /></button>
+                      title="Remove Image"
+                    ><Trash2 size={16} /></button>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
@@ -836,9 +837,13 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               <div className="flex flex-col gap-2 p-2 bg-[var(--bg-color)] rounded border border-[var(--border-color)]">
                 <span className="text-xs font-bold">{t('lbl_product_image', 'Image')}</span>
                 {newVarImage && (
-                  <div className="relative w-full h-24 rounded overflow-hidden">
-                    <img src={newVarImage} alt="Variant" className="w-full h-full object-cover" />
-                    <button className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full" onClick={() => setNewVarImage('')}><X size={12} /></button>
+                  <div className="relative w-full h-24 rounded overflow-hidden mb-2">
+                    <img src={newVarImage} alt="Variant Preview" className="w-full h-full object-cover" />
+                    <button 
+                      className="absolute top-1 right-1 p-1.5 bg-red-500/80 backdrop-blur-sm text-white rounded-full hover:bg-red-600 transition-colors shadow-md" 
+                      onClick={() => setNewVarImage('')}
+                      title="Remove Image"
+                    ><Trash2 size={14} /></button>
                   </div>
                 )}
                 <input type="file" accept="image/*" onChange={async (e) => {
