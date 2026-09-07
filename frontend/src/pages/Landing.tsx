@@ -47,35 +47,34 @@ function ProductCard({
               onClick={() => setFullScreenImg(pImages[currentImgIndex])} 
             />
             {pImages.length > 1 && (
-              <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full pointer-events-none">
+              <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full pointer-events-none z-10">
                 {currentImgIndex + 1} / {pImages.length}
               </div>
             )}
+            {pImages.length > 1 && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(i => (i === 0 ? pImages.length - 1 : i - 1)); }}
+                  className="absolute left-0 top-0 bottom-0 w-12 bg-black/10 backdrop-blur-[2px] border-none flex items-center justify-center cursor-pointer hover:bg-black/20 transition-colors"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft size={24} className="text-white drop-shadow-md" />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(i => (i === pImages.length - 1 ? 0 : i + 1)); }}
+                  className="absolute right-0 top-0 bottom-0 w-12 bg-black/10 backdrop-blur-[2px] border-none flex items-center justify-center cursor-pointer hover:bg-black/20 transition-colors"
+                  aria-label="Next image"
+                >
+                  <ChevronRight size={24} className="text-white drop-shadow-md" />
+                </button>
+              </>
+            )}
           </div>
-          {pImages.length > 1 && (
-            <>
-              <button 
-                onClick={() => setCurrentImgIndex(i => (i === 0 ? pImages.length - 1 : i - 1))}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-[var(--bg-color)] shadow-md border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-[var(--secondary-bg-color)] transition-colors opacity-80 hover:opacity-100"
-                aria-label="Previous image"
-              >
-                <ChevronLeft size={20} className="text-[var(--text-color)]" />
-              </button>
-              <button 
-                onClick={() => setCurrentImgIndex(i => (i === pImages.length - 1 ? 0 : i + 1))}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[var(--bg-color)] shadow-md border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-[var(--secondary-bg-color)] transition-colors opacity-80 hover:opacity-100"
-                aria-label="Next image"
-              >
-                <ChevronRight size={20} className="text-[var(--text-color)]" />
-              </button>
-            </>
-          )}
         </div>
       )}
 
       {pVariants.length > 0 && (
         <div className="flex flex-col gap-2 mb-4">
-          <span className="text-sm font-bold">{t('lbl_options', 'Options')}:</span>
           <div className="flex flex-col gap-2">
             <button 
               onClick={() => {
@@ -89,10 +88,9 @@ function ProductCard({
               className={`p-3 rounded-lg text-sm font-bold border transition-all flex justify-between items-center ${selectedVariantId === null ? 'bg-[var(--link-color)] border-[var(--link-color)] text-white shadow-md' : 'bg-[var(--secondary-bg-color)] text-[var(--text-color)] border-transparent hover:border-[var(--border-color)]'}`}
             >
               <span>{t('lbl_base_option', 'Standard')}</span>
-              <span className="opacity-90">{formatNumber(p.base_price)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
+              {selectedVariantId === null && <span className="w-2 h-2 rounded-full bg-white"></span>}
             </button>
             {pVariants.map(v => {
-              const variantPrice = p.base_price + v.price_modifier;
               return (
                 <button 
                   key={v.id} 
@@ -106,7 +104,7 @@ function ProductCard({
                   className={`p-3 rounded-lg text-sm font-bold border transition-all flex justify-between items-center ${selectedVariantId === v.id ? 'bg-[var(--link-color)] border-[var(--link-color)] text-white shadow-md' : 'bg-[var(--secondary-bg-color)] text-[var(--text-color)] border-transparent hover:border-[var(--border-color)]'}`}
                 >
                   <span>{v.name}</span>
-                  <span className="opacity-90">{formatNumber(variantPrice)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
+                  {selectedVariantId === v.id && <span className="w-2 h-2 rounded-full bg-white"></span>}
                 </button>
               );
             })}
@@ -336,13 +334,11 @@ export default function Landing({ initData }: { initData: string }) {
 
       {/* Full Screen Image Modal */}
       {fullScreenImg && (
-        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={() => setFullScreenImg(null)}>
-          <div className="relative w-full max-w-2xl h-full flex items-center justify-center pointer-events-none">
-            <button className="absolute top-4 left-4 z-50 bg-[rgba(0,0,0,0.5)] text-white border-none py-2 px-4 rounded-full flex items-center gap-2 pointer-events-auto" onClick={() => setFullScreenImg(null)}>
-              <span style={{fontSize: '18px', lineHeight: 1}}>×</span> {t('btn_close', 'Close')}
-            </button>
-            <img src={fullScreenImg} alt="Full Screen" style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain' }} className="pointer-events-auto" onClick={(e) => e.stopPropagation()} />
-          </div>
+        <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4" onClick={() => setFullScreenImg(null)}>
+          <button className="absolute top-4 right-4 z-50 bg-black/50 text-white border-none py-2 px-4 rounded-full flex items-center gap-2 pointer-events-auto cursor-pointer" onClick={() => setFullScreenImg(null)}>
+            <span style={{fontSize: '18px', lineHeight: 1}}>×</span> {t('btn_close', 'Close')}
+          </button>
+          <img src={fullScreenImg} alt="Full Screen" className="max-w-full max-h-[90vh] object-contain pointer-events-auto" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
     </div>
