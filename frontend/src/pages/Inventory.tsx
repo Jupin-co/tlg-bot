@@ -71,6 +71,12 @@ export default function Inventory({ initData }: { initData: string }) {
               <h4 className="font-bold text-lg m-0">{item.snapshot_name}</h4>
               <p className="text-sm text-hint mt-1 mb-4">{item.snapshot_description}</p>
               
+              {item.image_url && (
+                <div className="w-full h-40 rounded-lg overflow-hidden mb-4 border border-[var(--border-color)]">
+                  <img src={item.image_url} alt={item.snapshot_name} className="w-full h-full object-cover" />
+                </div>
+              )}
+
               {item.redeem_code && (
                 <div className="bg-[var(--secondary-bg-color)] p-3 rounded-lg border border-[var(--border-color)] mb-4 flex flex-col gap-2">
                   <span className="text-xs text-hint uppercase font-semibold">{t('lbl_code', 'Code')}</span>

@@ -17,7 +17,7 @@ function isValidIranianNationalCode(code: string): boolean {
 api.use('*', async (c, next) => {
   // Public endpoints that don't need initData
   const path = new URL(c.req.url).pathname;
-  if (path === '/api/translations' || path === '/api/catalog' || path.startsWith('/api/receipt-image')) {
+  if (path === '/api/translations' || path === '/api/catalog' || path.startsWith('/api/receipt-image') || path.startsWith('/api/product-image')) {
     return next();
   }
 
@@ -735,12 +735,16 @@ api.get('/inventory', async (c) => {
   const user = c.get('user');
   if (!user) return c.json({ error: 'No user data' }, 400);
 
-  const { results } = await c.env.DB.prepare(`
-    SELECT ui.* 
-    FROM user_inventory ui
-    WHERE ui.user_id = ?
-    ORDER BY ui.access_starts_at DESC
-  `).bind(user.id).all();
+    const { results } = await c.env.DB.prepare(`
+      SELECT ui.*, p.image_url 
+      FROM user_inventory ui
+      LEFT JOIN payments pay ON pay.id = ui.payment_id
+      LEFT JOIN invoice_items ii ON ii.invoice_id = pay.invoice_id AND ii.snapshot_name = ui.snapshot_name
+      LEFT JOIN products p ON p.id = ii.product_id
+      WHERE ui.user_id = ?
+      GROUP BY ui.id
+      ORDER BY ui.access_starts_at DESC
+    `).bind(user.id).all();
   
   return c.json({ inventory: results });
 });
