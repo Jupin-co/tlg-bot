@@ -578,17 +578,24 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             <div className="flex flex-col gap-3">
               {products.map(p => (
                 <div key={p.id} className="card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" style={{ marginBottom: 0 }}>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-lg m-0">{p.name}</h4>
-                    <p className="font-bold text-[var(--link-color)] mt-1">{formatNumber(p.base_price)} {p.currency}</p>
-                    <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? t('lbl_unlimited', 'Unlimited') as string : formatNumber(p.stock)} | {t('lbl_days', 'Days') as string}: {formatNumber(p.duration_days)}</p>
-                    <div className="flex gap-2 mt-3">
-                      <button onClick={() => openEditProduct(p)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
-                        <Edit size={12} /> {t("btn_edit", "Edit")}
-                      </button>
-                      <button onClick={() => openManageCodes(p.id)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
-                        <Key size={12} /> {t("btn_codes", "Codes")}
-                      </button>
+                  <div className="flex-1 flex gap-3">
+                    {p.image_url && (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-[var(--border-color)] hidden sm:block">
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-bold text-lg m-0">{p.name}</h4>
+                      <p className="font-bold text-[var(--link-color)] mt-1">{formatNumber(p.base_price)} {p.currency}</p>
+                      <p className="text-xs text-hint mt-1 num-fix">{t('lbl_stock', 'Stock')}: {p.stock === -1 ? t('lbl_unlimited', 'Unlimited') as string : formatNumber(p.stock)} | {t('lbl_days', 'Days') as string}: {formatNumber(p.duration_days)}</p>
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={() => openEditProduct(p)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
+                          <Edit size={12} /> {t("btn_edit", "Edit")}
+                        </button>
+                        <button onClick={() => openManageCodes(p.id)} className="secondary flex items-center gap-1 text-xs py-1 px-2 rounded-lg">
+                          <Key size={12} /> {t("btn_codes", "Codes")}
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-row sm:flex-col items-center gap-3 w-full sm:w-auto mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-[var(--border-color)]">
@@ -1072,7 +1079,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
           <div className="flex flex-col gap-4 mt-4">
             {roles.map(role => (
               <div key={role.id} className="card">
-                <h3 className="font-bold text-lg mb-4 text-[var(--link-color)]">{role.name}</h3>
+                <h3 className="font-bold text-lg mb-4 text-[var(--link-color)]">{t('role_' + role.name.toLowerCase(), role.name) as string}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {allTabs.map(tab => (
                     <label 
@@ -1131,7 +1138,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                             className="p-1 px-2 text-sm rounded-lg border border-[var(--border-color)] bg-[var(--secondary-bg-color)] text-[var(--text-color)]"
                           >
                             {roles.map(r => (
-                              <option key={r.id} value={r.id}>{r.name}</option>
+                              <option key={r.id} value={r.id}>{t('role_' + r.name.toLowerCase(), r.name) as string}</option>
                             ))}
                           </select>
                         </div>
@@ -1162,8 +1169,8 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                       <div className="text-xs text-hint num-fix">{new Date(l.created_at).toLocaleString()}</div>
                     </div>
                     {l.metadata && (
-                      <div className="mt-2 w-full max-w-full overflow-hidden">
-                        <pre className="text-xs font-mono p-2 bg-[var(--bg-color)] border border-[var(--border-color)] rounded overflow-auto" style={{maxHeight: '200px', width: '100%'}}>
+                      <div className="mt-2 w-full">
+                        <pre className="text-xs font-mono p-2 bg-[var(--bg-color)] border border-[var(--border-color)] rounded overflow-y-auto" style={{maxHeight: '200px', width: '100%', whiteSpace: 'pre-wrap', wordBreak: 'break-all'}}>
                           {(() => {
                             try {
                               const parsed = JSON.parse(l.metadata);
