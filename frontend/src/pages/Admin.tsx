@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { loadTranslations } from '../i18n';
-import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User, RefreshCw, CheckCircle, XCircle, Package } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -45,6 +45,14 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [newProdDesc, setNewProdDesc] = useState('');
   const [newProdImage, setNewProdImage] = useState('');
   
+  // Variants States
+  const [variants, setVariants] = useState<any[]>([]);
+  const [manageVariantsProductId, setManageVariantsProductId] = useState<number | null>(null);
+  const [newVarName, setNewVarName] = useState('');
+  const [newVarPriceMod, setNewVarPriceMod] = useState('0');
+  const [newVarStock, setNewVarStock] = useState('-1');
+  const [newVarDetails, setNewVarDetails] = useState('');
+  const [newVarImage, setNewVarImage] = useState('');
   // Settings States
   const [cardHolder, setCardHolder] = useState('');
   const [cardNumber, setCardNumber] = useState('');

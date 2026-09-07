@@ -206,7 +206,6 @@ export default function Landing({ initData }: { initData: string }) {
                   </span>
                 ) : (
                   (() => {
-                    const pVariants = variants.filter(v => v.product_id === p.id);
                     const productBasketItems = basketItems.filter(i => i.product_id === p.id);
                     const totalQuantity = productBasketItems.reduce((sum, i) => sum + i.quantity, 0);
 
