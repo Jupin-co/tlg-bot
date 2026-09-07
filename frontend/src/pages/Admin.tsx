@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../i18n';
 import { loadTranslations } from '../i18n';
-import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User, RefreshCw, CheckCircle, XCircle, Package, Trash2 } from 'lucide-react';
+import { Settings, ShoppingBag, CreditCard, MessageSquare, Users, Plus, Edit, X, Eye, Key, Save, ArrowLeft, Menu, Clock, User, RefreshCw, CheckCircle, XCircle, Package, Trash2, Search, ArrowUpDown } from 'lucide-react';
 
 export default function Admin({ initData, userProfile }: { initData: string, userProfile: any }) {
   const { t } = useTranslation();
@@ -13,6 +13,9 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [payments, setPayments] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  
+  const [prodSearchQuery, setProdSearchQuery] = useState('');
+  const [prodSortOrder, setProdSortOrder] = useState<'none' | 'price_asc' | 'price_desc'>('none');
   
   // User Logs State
   const [userLogs, setUserLogs] = useState<any[]>([]);
@@ -650,9 +653,41 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
           <div>
             <h3 className="font-bold mb-3">{t('catalog')}</h3>
+            <div className="flex flex-col gap-3 mb-4 bg-[var(--card-bg-color)] p-3 rounded-[var(--radius-lg)] border border-[var(--border-color)] shadow-sm">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-hint" size={18} />
+                <input 
+                  type="text" 
+                  placeholder={t('search', 'Search')} 
+                  value={prodSearchQuery}
+                  onChange={(e) => setProdSearchQuery(e.target.value)}
+                  className="w-full pl-10 m-0 bg-[var(--bg-color)]"
+                  style={{ margin: 0 }}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setProdSortOrder(prev => prev === 'none' ? 'price_asc' : prev === 'price_asc' ? 'price_desc' : 'none')}
+                  className={`flex-1 flex items-center justify-center gap-2 m-0 ${prodSortOrder !== 'none' ? 'primary' : 'secondary'}`}
+                >
+                  <ArrowUpDown size={16} />
+                  <span className="text-sm font-medium">
+                    {prodSortOrder === 'none' ? 'Sort by Price' : prodSortOrder === 'price_asc' ? 'Price: Low to High' : 'Price: High to Low'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
             {products.length === 0 && <p className="text-hint">{t('no_products')}</p>}
+            
             <div className="flex flex-col gap-3">
-              {products.map(p => (
+              {[...products]
+                .filter(p => p.name.toLowerCase().includes(prodSearchQuery.toLowerCase()))
+                .sort((a, b) => {
+                  if (prodSortOrder === 'none') return 0;
+                  return prodSortOrder === 'price_asc' ? a.base_price - b.base_price : b.base_price - a.base_price;
+                })
+                .map(p => (
                 <div key={p.id} className="card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" style={{ marginBottom: 0 }}>
                   <div className="flex-1 flex gap-3">
                     {p.image_url && (

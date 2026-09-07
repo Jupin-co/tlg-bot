@@ -291,25 +291,29 @@ export default function Landing({ initData }: { initData: string }) {
         </button>
       )}
 
-      <div className="flex gap-2 mb-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3 mb-4 bg-[var(--card-bg-color)] p-3 rounded-[var(--radius-lg)] border border-[var(--border-color)] shadow-sm">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-hint" size={18} />
           <input 
             type="text" 
             placeholder={t('search', 'Search')} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 bg-[var(--secondary-bg-color)] border border-[var(--border-color)] rounded-full text-sm"
+            className="w-full pl-10 m-0 bg-[var(--bg-color)]"
+            style={{ margin: 0 }}
           />
         </div>
-        <button 
-          onClick={() => setSortOrder(prev => prev === 'none' ? 'price_asc' : prev === 'price_asc' ? 'price_desc' : 'none')}
-          className="secondary p-2 rounded-full flex items-center justify-center border border-[var(--border-color)] shrink-0"
-        >
-          <ArrowUpDown size={18} className={sortOrder !== 'none' ? 'text-[var(--link-color)]' : 'text-hint'} />
-          {sortOrder === 'price_asc' && <span className="ml-1 text-xs font-bold">↑</span>}
-          {sortOrder === 'price_desc' && <span className="ml-1 text-xs font-bold">↓</span>}
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setSortOrder(prev => prev === 'none' ? 'price_asc' : prev === 'price_asc' ? 'price_desc' : 'none')}
+            className={`flex-1 flex items-center justify-center gap-2 m-0 ${sortOrder !== 'none' ? 'primary' : 'secondary'}`}
+          >
+            <ArrowUpDown size={16} />
+            <span className="text-sm font-medium">
+              {sortOrder === 'none' ? 'Sort by Price' : sortOrder === 'price_asc' ? 'Price: Low to High' : 'Price: High to Low'}
+            </span>
+          </button>
+        </div>
       </div>
       
       <div className="flex flex-col gap-4 mt-2">
