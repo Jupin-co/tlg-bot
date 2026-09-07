@@ -112,7 +112,7 @@ export default function Basket({ initData }: { initData: string }) {
           <div className="card mt-4 bg-[var(--secondary-bg-color)] border-none">
             <div className="flex justify-between items-center mb-6">
               <span className="text-hint font-semibold uppercase">{t('lbl_total', 'Total')}</span>
-              <span className="font-bold text-2xl text-[var(--button-color)]">{formatNumber(basket.reduce((a, b) => a + b.base_price * b.quantity, 0))} {t(basket[0]?.currency?.toLowerCase() || '', basket[0]?.currency)}
+              <span className="font-bold text-2xl text-[var(--button-color)]">{formatNumber(basket.reduce((a, b) => a + b.base_price * b.quantity, 0))} {t(basket[0]?.currency?.toLowerCase() || '', basket[0]?.currency) as string}
               </span>
             </div>
             <button className="w-full justify-center" style={{ padding: '16px', fontSize: '18px' }} onClick={handleCheckout}>
