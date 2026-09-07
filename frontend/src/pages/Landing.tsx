@@ -2,15 +2,22 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { formatNumber } from '../i18n';
-import { ShoppingCart, Plus, Calendar, PackageOpen, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, Plus, Calendar, PackageOpen, Search, ArrowUpDown } from 'lucide-react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import Lightbox from 'yet-another-react-lightbox';
+import 'yet-another-react-lightbox/styles.css';
 
 function ProductCard({ 
-  p, variants, basketItems, addToBasket, handleDecrement, t, setFullScreenImg 
+  p, variants, basketItems, addToBasket, handleDecrement, t, openLightbox 
 }: { 
-  p: any, variants: any[], basketItems: any[], addToBasket: any, handleDecrement: any, t: any, setFullScreenImg: any 
+  p: any, variants: any[], basketItems: any[], addToBasket: any, handleDecrement: any, t: any, openLightbox: any 
 }) {
   const pVariants = variants.filter(v => v.product_id === p.id);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  const [swiperInstance, setSwiperInstance] = useState<any>(null);
   
   const selectedVariant = selectedVariantId ? pVariants.find(v => v.id === selectedVariantId) : null;
   const currentPrice = selectedVariant ? p.base_price + selectedVariant.price_modifier : p.base_price;
@@ -28,8 +35,6 @@ function ProductCard({
     if (v.image_url && !pImages.includes(v.image_url)) pImages.push(v.image_url);
   });
   
-  const [currentImgIndex, setCurrentImgIndex] = useState(0);
-
   return (
     <div className="card">
       <div className="flex justify-between items-start mb-4 gap-2">
@@ -40,35 +45,23 @@ function ProductCard({
       {pImages.length > 0 && (
         <div className="w-full relative mb-4">
           <div className="w-full h-48 border border-[var(--border-color)] overflow-hidden bg-[var(--secondary-bg-color)] rounded-lg relative">
-            <img 
-              src={pImages[currentImgIndex]} 
-              alt={`${p.name} image`} 
-              className="w-full h-full object-cover cursor-pointer" 
-              onClick={() => setFullScreenImg(pImages[currentImgIndex])} 
-            />
-            {pImages.length > 1 && (
-              <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full pointer-events-none z-10">
-                {currentImgIndex + 1} / {pImages.length}
-              </div>
-            )}
-            {pImages.length > 1 && (
-              <>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(i => (i === 0 ? pImages.length - 1 : i - 1)); }}
-                  className="absolute left-0 top-0 bottom-0 w-12 bg-black/10 backdrop-blur-[2px] border-none flex items-center justify-center cursor-pointer hover:bg-black/20 transition-colors"
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft size={24} className="text-white drop-shadow-md" />
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(i => (i === pImages.length - 1 ? 0 : i + 1)); }}
-                  className="absolute right-0 top-0 bottom-0 w-12 bg-black/10 backdrop-blur-[2px] border-none flex items-center justify-center cursor-pointer hover:bg-black/20 transition-colors"
-                  aria-label="Next image"
-                >
-                  <ChevronRight size={24} className="text-white drop-shadow-md" />
-                </button>
-              </>
-            )}
+            <Swiper
+              modules={[Pagination]}
+              pagination={{ clickable: true, dynamicBullets: true }}
+              onSwiper={setSwiperInstance}
+              className="w-full h-full"
+            >
+              {pImages.map((img, idx) => (
+                <SwiperSlide key={idx} className="w-full h-full">
+                  <img 
+                    src={img} 
+                    alt={`${p.name} image ${idx + 1}`} 
+                    className="w-full h-full object-cover cursor-pointer" 
+                    onClick={() => openLightbox(pImages, idx)} 
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
           </div>
         </div>
       )}
@@ -79,10 +72,11 @@ function ProductCard({
             <button 
               onClick={() => {
                 setSelectedVariantId(null);
-                if (p.image_url) {
-                  setCurrentImgIndex(pImages.indexOf(p.image_url) !== -1 ? pImages.indexOf(p.image_url) : 0);
-                } else {
-                  setCurrentImgIndex(0);
+                if (p.image_url && swiperInstance) {
+                  const idx = pImages.indexOf(p.image_url);
+                  if (idx !== -1) swiperInstance.slideTo(idx);
+                } else if (swiperInstance) {
+                  swiperInstance.slideTo(0);
                 }
               }}
               className={`p-3 rounded-lg text-sm font-bold border transition-all flex justify-between items-center ${selectedVariantId === null ? 'bg-[var(--link-color)] border-[var(--link-color)] text-white shadow-md' : 'bg-[var(--secondary-bg-color)] text-[var(--text-color)] border-transparent hover:border-[var(--border-color)]'}`}
@@ -96,9 +90,9 @@ function ProductCard({
                   key={v.id} 
                   onClick={() => {
                     setSelectedVariantId(v.id);
-                    if (v.image_url) {
+                    if (v.image_url && swiperInstance) {
                       const idx = pImages.indexOf(v.image_url);
-                      if (idx !== -1) setCurrentImgIndex(idx);
+                      if (idx !== -1) swiperInstance.slideTo(idx);
                     }
                   }}
                   className={`p-3 rounded-lg text-sm font-bold border transition-all flex justify-between items-center ${selectedVariantId === v.id ? 'bg-[var(--link-color)] border-[var(--link-color)] text-white shadow-md' : 'bg-[var(--secondary-bg-color)] text-[var(--text-color)] border-transparent hover:border-[var(--border-color)]'}`}
@@ -153,7 +147,15 @@ export default function Landing({ initData }: { initData: string }) {
   const [basketCount, setBasketCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('none'); // none, price_asc, price_desc
-  const [fullScreenImg, setFullScreenImg] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<{src: string}[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = (images: string[], index: number) => {
+    setLightboxImages(images.map(src => ({ src })));
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
 
   const fetchBasketCount = () => {
     fetch('/api/basket', { headers: { 'x-telegram-init-data': initData } })
@@ -326,21 +328,20 @@ export default function Landing({ initData }: { initData: string }) {
               addToBasket={addToBasket} 
               handleDecrement={handleDecrement} 
               t={t} 
-              setFullScreenImg={setFullScreenImg}
+              openLightbox={openLightbox}
             />
           ))
         )}
       </div>
 
-      {/* Full Screen Image Modal */}
-      {fullScreenImg && (
-        <div className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4" onClick={() => setFullScreenImg(null)}>
-          <button className="absolute top-4 right-4 z-50 bg-black/50 text-white border-none py-2 px-4 rounded-full flex items-center gap-2 pointer-events-auto cursor-pointer" onClick={() => setFullScreenImg(null)}>
-            <span style={{fontSize: '18px', lineHeight: 1}}>×</span> {t('btn_close', 'Close')}
-          </button>
-          <img src={fullScreenImg} alt="Full Screen" className="max-w-full max-h-[90vh] object-contain pointer-events-auto" onClick={(e) => e.stopPropagation()} />
-        </div>
-      )}
+      <Lightbox
+        open={lightboxOpen}
+        close={() => setLightboxOpen(false)}
+        index={lightboxIndex}
+        slides={lightboxImages}
+        carousel={{ finite: lightboxImages.length <= 1 }}
+        render={{ buttonPrev: lightboxImages.length <= 1 ? () => null : undefined, buttonNext: lightboxImages.length <= 1 ? () => null : undefined }}
+      />
     </div>
   );
 }
