@@ -781,7 +781,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
       {/* Variants Modal */}
       {manageVariantsProductId !== null && (
         <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div className="card w-full max-w-sm flex flex-col" style={{ maxHeight: "90vh", overflow: "hidden" }}>
+          <div className="card w-full max-w-sm flex flex-col" style={{ maxHeight: "90vh", overflowY: "auto" }}>
             <div className="flex justify-between items-center mb-4 shrink-0">
               <h3 className="font-bold m-0">{t("btn_variants", "Variants")}</h3>
               <button onClick={() => setManageVariantsProductId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
