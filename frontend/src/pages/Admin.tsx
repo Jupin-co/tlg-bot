@@ -363,6 +363,15 @@ export default function Admin({ initData, userProfile }: { initData: string, use
 
   const saveVariant = async () => {
     if (!newVarName || !manageVariantsProductId) return showToast("Please enter name", "error");
+    const parentProduct = products.find(p => p.id === manageVariantsProductId);
+    const basePrice = parentProduct?.base_price || 0;
+    
+    // If empty string, modifier is 0. Otherwise modifier = input_price - base_price
+    let priceMod = 0;
+    if (newVarPriceMod.trim() !== '') {
+      priceMod = parseInt(newVarPriceMod) - basePrice;
+    }
+
     try {
       const res = await fetch('/api/admin/variants', {
         method: 'POST',
@@ -370,7 +379,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
         body: JSON.stringify({ 
           product_id: manageVariantsProductId,
           name: newVarName, 
-          price_modifier: parseInt(newVarPriceMod) || 0, 
+          price_modifier: priceMod, 
           stock: parseInt(newVarStock) || -1,
           details: newVarDetails,
           image_url: newVarImage
@@ -790,7 +799,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
             <div className="flex flex-col gap-2 mb-4 shrink-0 p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
               <h4 className="font-bold text-sm m-0">Add New Variant</h4>
               <input className="w-full text-sm p-2" placeholder={t('name')} value={newVarName} onChange={e => setNewVarName(e.target.value)} />
-              <input type="number" className="w-full text-sm p-2" placeholder="Price Modifier (e.g. +10, -5)" value={newVarPriceMod} onChange={e => setNewVarPriceMod(e.target.value)} />
+              <input type="number" className="w-full text-sm p-2" placeholder="Price (Leave empty for product default price)" value={newVarPriceMod} onChange={e => setNewVarPriceMod(e.target.value)} />
               <input type="number" className="w-full text-sm p-2" placeholder={t('lbl_stock', 'Stock')} value={newVarStock} onChange={e => setNewVarStock(e.target.value)} />
               <input className="w-full text-sm p-2" placeholder={t('description')} value={newVarDetails} onChange={e => setNewVarDetails(e.target.value)} />
               <div className="flex flex-col gap-2 p-2 bg-[var(--bg-color)] rounded border border-[var(--border-color)]">
@@ -815,29 +824,34 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               </div>
               <button className="w-full mt-2" onClick={saveVariant}>{t('save')}</button>
             </div>
-
+            
             <div className="flex-1 overflow-y-auto mt-2 pr-1">
               {variants.filter(v => v.product_id === manageVariantsProductId).length === 0 && <p className="text-hint text-sm">No variants added yet.</p>}
               <div className="flex flex-col gap-2">
-                {variants.filter(v => v.product_id === manageVariantsProductId).map(v => (
-                  <div key={v.id} className="flex flex-col gap-2 p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col gap-1 w-full overflow-hidden">
-                        <div className="flex items-center gap-2">
-                          <strong className="font-bold text-sm truncate">{v.name}</strong>
-                          <span className="text-xs px-2 py-0.5 bg-[rgba(52,199,89,0.1)] text-success rounded font-bold">{v.price_modifier > 0 ? '+' : ''}{v.price_modifier}</span>
+                {variants.filter(v => v.product_id === manageVariantsProductId).map(v => {
+                  const parentProduct = products.find(p => p.id === manageVariantsProductId);
+                  const basePrice = parentProduct?.base_price || 0;
+                  const finalPrice = basePrice + v.price_modifier;
+                  return (
+                    <div key={v.id} className="flex flex-col gap-2 p-3 bg-[var(--secondary-bg-color)] rounded-lg border border-[var(--border-color)]">
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-1 w-full overflow-hidden">
+                          <div className="flex items-center gap-2">
+                            <strong className="font-bold text-sm truncate">{v.name}</strong>
+                            <span className="text-xs px-2 py-0.5 bg-[rgba(52,199,89,0.1)] text-success rounded font-bold">{finalPrice}</span>
+                          </div>
+                          <p className="text-xs text-hint m-0">{v.details}</p>
                         </div>
-                        <p className="text-xs text-hint m-0">{v.details}</p>
+                        <button onClick={() => deleteVariant(v.id)} className="danger py-1 px-3 text-xs rounded-full shrink-0 ml-2">Delete</button>
                       </div>
-                      <button onClick={() => deleteVariant(v.id)} className="danger py-1 px-3 text-xs rounded-full shrink-0 ml-2">{t("btn_delete", "Delete")}</button>
+                      {v.image_url && (
+                        <div className="w-full h-20 rounded overflow-hidden mt-1 border border-[var(--border-color)]">
+                          <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
+                        </div>
+                      )}
                     </div>
-                    {v.image_url && (
-                      <div className="w-full h-20 rounded overflow-hidden mt-1 border border-[var(--border-color)]">
-                        <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
