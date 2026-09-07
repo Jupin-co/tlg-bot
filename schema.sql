@@ -101,6 +101,7 @@ CREATE TABLE products (
     currency TEXT DEFAULT 'USD',
     duration_days INTEGER DEFAULT 0,
     stock INTEGER DEFAULT -1,
+    image_url TEXT,
     is_selling BOOLEAN DEFAULT 1,
     is_hidden BOOLEAN DEFAULT 0,
     FOREIGN KEY(category_id) REFERENCES categories(id)

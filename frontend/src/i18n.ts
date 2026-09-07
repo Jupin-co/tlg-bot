@@ -46,7 +46,12 @@ const resources = {
       no_codes_added_yet: "No codes added yet",
       toman: "Toman",
       usd: "USD",
-      irr: "IRR"
+      irr: "IRR",
+      irt: "IRT",
+      status_pending_payment: "Pending Payment",
+      status_pending_approval: "Pending Approval",
+      status_approved: "Approved",
+      status_rejected: "Rejected"
     }
   },
   fa: {
@@ -74,7 +79,7 @@ const resources = {
       lbl_out_of_stock: "ناموجود",
       btn_add_to_basket: "افزودن به سبد",
       tab_settings: "تنظیمات",
-      tab_inventory: "موجودی",
+      tab_inventory: "خریدها",
       lbl_support: "پشتیبانی",
       tab_wallet: "کیف پول",
       tab_payments: "پرداخت ها",
@@ -93,7 +98,12 @@ const resources = {
       no_codes_added_yet: "هنوز کدی اضافه نشده",
       toman: "تومان",
       usd: "دلار",
-      irr: "ریال"
+      irr: "ریال",
+      irt: "تومان",
+      status_pending_payment: "در انتظار پرداخت",
+      status_pending_approval: "در انتظار تایید",
+      status_approved: "تایید شده",
+      status_rejected: "رد شده"
     }
   }
 };

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { formatNumber } from '../i18n';
-import { ShoppingCart, Plus, Calendar, PackageOpen } from 'lucide-react';
+import { ShoppingCart, Plus, Calendar, PackageOpen, Search, ArrowUpDown } from 'lucide-react';
 
 export default function Landing({ initData }: { initData: string }) {
   const { t } = useTranslation();
@@ -10,6 +10,8 @@ export default function Landing({ initData }: { initData: string }) {
   const [products, setProducts] = useState<any[]>([]);
   const [basketItems, setBasketItems] = useState<any[]>([]);
   const [basketCount, setBasketCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState('none'); // none, price_asc, price_desc
 
   const fetchBasketCount = () => {
     fetch('/api/basket', { headers: { 'x-telegram-init-data': initData } })
@@ -106,6 +108,13 @@ export default function Landing({ initData }: { initData: string }) {
     }
   };
 
+  const filteredProducts = products.filter(p => !p.is_hidden && p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortOrder === 'price_asc') return a.base_price - b.base_price;
+    if (sortOrder === 'price_desc') return b.base_price - a.base_price;
+    return 0;
+  });
+
   return (
     <div className="container dir-auto">
       <h1 className="text-xl font-bold mb-4">{t('catalog')}</h1>
@@ -125,22 +134,52 @@ export default function Landing({ initData }: { initData: string }) {
           </span>
         </button>
       )}
+
+      <div className="flex gap-2 mb-4">
+        <div className="relative flex-1">
+          <input 
+            type="text" 
+            placeholder={t('search_placeholder', 'Search...') as string} 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] m-0"
+          />
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-hint" />
+        </div>
+        <button 
+          className="secondary px-4 py-3 rounded-full border-none m-0 bg-[var(--card-bg-color)] shadow-sm"
+          onClick={() => {
+            if (sortOrder === 'none') setSortOrder('price_asc');
+            else if (sortOrder === 'price_asc') setSortOrder('price_desc');
+            else setSortOrder('none');
+          }}
+        >
+          <ArrowUpDown size={18} />
+          {sortOrder === 'price_asc' && <span className="ml-1 text-xs font-bold">↑</span>}
+          {sortOrder === 'price_desc' && <span className="ml-1 text-xs font-bold">↓</span>}
+        </button>
+      </div>
       
-      <div className="flex flex-col gap-4 mt-6">
-        {products.length === 0 ? (
+      <div className="flex flex-col gap-4 mt-2">
+        {sortedProducts.length === 0 ? (
           <div className="card text-center py-8 text-hint flex flex-col items-center gap-3">
             <PackageOpen size={48} opacity={0.5} />
-            <p>{t('no_products')}</p>
+            <p>{searchQuery ? t('no_results', 'No results found.') : t('no_products')}</p>
           </div>
         ) : (
-          products.map(p => (
-            <div key={p.id} className="card" style={{ display: p.is_hidden ? 'none' : 'block' }}>
+          sortedProducts.map(p => (
+            <div key={p.id} className="card">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold" style={{ margin: 0 }}>{p.name}</h3>
-                <span className="font-bold text-lg" style={{ color: 'var(--link-color)' }}>{formatNumber(p.base_price)} {t(p.currency.toLowerCase(), p.currency) as string}
-                </span>
+                <h3 className="text-lg font-bold m-0">{p.name}</h3>
+                <span className="font-bold text-lg text-[var(--link-color)]">{formatNumber(p.base_price)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
               </div>
               
+              {p.image_url && (
+                <div className="w-full h-48 rounded-lg overflow-hidden mb-4 border border-[var(--border-color)]">
+                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                </div>
+              )}
+
               {p.description && <p className="text-hint text-sm mb-6 leading-relaxed">{p.description}</p>}
               
               <div className="flex justify-between items-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border-color)' }}>

@@ -206,7 +206,7 @@ export default function Profile({ initData, userProfile, error }: { initData: st
             payments.map(p => (
               <div 
                 key={p.id} 
-                className="card flex flex-col gap-3 cursor-pointer hover:border-[var(--button-color)] transition-colors" 
+                className={`card flex flex-col gap-3 transition-colors ${p.status !== 'REJECTED' ? 'cursor-pointer hover:border-[var(--button-color)]' : ''}`}
                 onClick={() => {
                   if (p.status === 'PENDING_APPROVAL' || p.status === 'PENDING_PAYMENT') {
                     navigate(`/invoice/${p.invoice_id}`);
