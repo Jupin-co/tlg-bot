@@ -4,6 +4,96 @@ import { useNavigate } from 'react-router-dom';
 import { formatNumber } from '../i18n';
 import { ShoppingCart, Plus, Calendar, PackageOpen, Search, ArrowUpDown } from 'lucide-react';
 
+function ProductCard({ 
+  p, variants, basketItems, addToBasket, handleDecrement, t, setFullScreenImg 
+}: { 
+  p: any, variants: any[], basketItems: any[], addToBasket: any, handleDecrement: any, t: any, setFullScreenImg: any 
+}) {
+  const pVariants = variants.filter(v => v.product_id === p.id);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(pVariants.length > 0 ? pVariants[0].id : null);
+  
+  const selectedVariant = selectedVariantId ? pVariants.find(v => v.id === selectedVariantId) : null;
+  const currentPrice = selectedVariant ? p.base_price + selectedVariant.price_modifier : p.base_price;
+  const currentDetails = selectedVariant?.details || p.description;
+  const currentStock = selectedVariant ? selectedVariant.stock : p.stock;
+
+  const productBasketItems = basketItems.filter(i => i.product_id === p.id && (selectedVariantId ? i.variant_id === selectedVariantId : true));
+  const totalQuantity = productBasketItems.reduce((sum, i) => sum + i.quantity, 0);
+
+  const pImages: string[] = [];
+  if (p.image_url) pImages.push(p.image_url);
+  pVariants.forEach(v => {
+    if (v.image_url && !pImages.includes(v.image_url)) pImages.push(v.image_url);
+  });
+  
+  return (
+    <div className="card">
+      <div className="flex justify-between items-start mb-4 gap-2">
+        <h3 className="text-lg font-bold m-0 flex-1">{p.name}{selectedVariant ? ` - ${selectedVariant.name}` : ''}</h3>
+        <span className="font-bold text-lg text-[var(--link-color)] shrink-0">{formatNumber(currentPrice)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
+      </div>
+      
+      {pImages.length > 0 && (
+        <div className="w-full flex overflow-x-auto snap-x snap-mandatory gap-2 mb-4 no-scrollbar">
+          {pImages.map((img, i) => (
+            <div key={i} className="min-w-full shrink-0 h-48 snap-center border border-[var(--border-color)] overflow-hidden bg-[var(--secondary-bg-color)] rounded-lg relative">
+              <img src={img} alt={`${p.name} image ${i+1}`} className="w-full h-full object-cover cursor-pointer" onClick={() => setFullScreenImg(img)} />
+              {pImages.length > 1 && (
+                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full pointer-events-none">
+                  {i + 1} / {pImages.length}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {pVariants.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {pVariants.map(v => (
+            <button 
+              key={v.id} 
+              onClick={() => setSelectedVariantId(v.id)}
+              className={`py-1 px-3 rounded-full text-xs font-bold border transition-colors ${selectedVariantId === v.id ? 'bg-[var(--link-color)] text-white border-[var(--link-color)]' : 'bg-transparent text-[var(--text-color)] border-[var(--border-color)]'}`}
+            >
+              {v.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {currentDetails && <p className="text-hint text-sm mb-6 leading-relaxed whitespace-pre-wrap">{currentDetails}</p>}
+      
+      <div className="flex justify-between items-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border-color)' }}>
+        <div className="flex items-center gap-2 text-hint text-sm">
+          <Calendar size={16} />
+          <span>{p.duration_days > 0 ? `${formatNumber(p.duration_days)} ${t('lbl_days', 'days')}` : t('lbl_lifetime', 'Lifetime') as string}</span>
+        </div>
+        
+        {currentStock === 0 ? (
+          <span className="text-danger font-bold text-sm px-4 py-2" style={{ background: 'rgba(255,59,48,0.1)', borderRadius: 'var(--radius-full)' }}>
+            {t('lbl_out_of_stock', 'Out of Stock')}
+          </span>
+        ) : (
+          totalQuantity > 0 ? (
+            <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-full p-1 border border-[var(--border-color)]">
+              <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => {
+                handleDecrement(productBasketItems[productBasketItems.length - 1].basket_id);
+              }}>-</button>
+              <span className="font-bold min-w-[20px] text-center">{formatNumber(totalQuantity)}</span>
+              <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id, selectedVariantId)} disabled={currentStock !== -1 && totalQuantity >= currentStock} style={{ opacity: (currentStock !== -1 && totalQuantity >= currentStock) ? 0.5 : 1 }}>+</button>
+            </div>
+          ) : (
+            <button onClick={() => addToBasket(p.id, selectedVariantId || undefined)} style={{ borderRadius: 'var(--radius-full)' }}>
+              <Plus size={18} /> {t('btn_add_to_basket', 'Add to Basket')}
+            </button>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Landing({ initData }: { initData: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -13,7 +103,7 @@ export default function Landing({ initData }: { initData: string }) {
   const [basketCount, setBasketCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState('none'); // none, price_asc, price_desc
-  const [selectedProductForVariant, setSelectedProductForVariant] = useState<any | null>(null);
+  const [fullScreenImg, setFullScreenImg] = useState<string | null>(null);
 
   const fetchBasketCount = () => {
     fetch('/api/basket', { headers: { 'x-telegram-init-data': initData } })
@@ -39,7 +129,6 @@ export default function Landing({ initData }: { initData: string }) {
       if (data.products) setProducts(data.products);
       if (data.variants) setVariants(data.variants);
       
-      // Log visit
       fetch('/api/log', {
         method: 'POST',
         headers: {
@@ -79,12 +168,6 @@ export default function Landing({ initData }: { initData: string }) {
   const addToBasket = async (productId: number, variantId?: number) => {
     try {
       const product = products.find(p => p.id === productId);
-      const productVariants = variants.filter(v => v.product_id === productId);
-
-      if (!variantId && productVariants.length > 0) {
-        setSelectedProductForVariant(product);
-        return; // Open modal instead of adding immediately
-      }
 
       fetch('/api/log', {
         method: 'POST',
@@ -112,7 +195,6 @@ export default function Landing({ initData }: { initData: string }) {
         body: JSON.stringify({ product_id: productId, variant_id: variantId })
       });
       if (res.ok) {
-        setSelectedProductForVariant(null);
         fetchBasketCount();
       }
     } catch {
@@ -138,35 +220,41 @@ export default function Landing({ initData }: { initData: string }) {
         >
           <ShoppingCart size={24} />
           <span style={{
-            position: 'absolute', top: -4, right: -4, background: '#ff3b30', color: 'white', 
-            borderRadius: '12px', padding: '2px 6px', fontSize: 12, fontWeight: 'bold',
-            border: '2px solid var(--bg-color)', lineHeight: 1
+            position: 'absolute',
+            top: -4,
+            right: -4,
+            background: 'var(--danger-color)',
+            color: 'white',
+            borderRadius: '50%',
+            width: 20,
+            height: 20,
+            fontSize: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 'bold'
           }}>
-            <span>{formatNumber(basketCount)}</span>
+            {basketCount}
           </span>
         </button>
       )}
 
       <div className="flex gap-2 mb-4">
         <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-hint" size={18} />
           <input 
             type="text" 
-            placeholder={t('search_placeholder', 'Search...') as string} 
+            placeholder={t('search', 'Search')} 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-full border border-[var(--border-color)] bg-[var(--bg-color)] m-0"
+            className="w-full pl-10 bg-[var(--secondary-bg-color)] border border-[var(--border-color)] rounded-full text-sm"
           />
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-hint" />
         </div>
         <button 
-          className="secondary px-4 py-3 rounded-full border-none m-0 bg-[var(--card-bg-color)] shadow-sm"
-          onClick={() => {
-            if (sortOrder === 'none') setSortOrder('price_asc');
-            else if (sortOrder === 'price_asc') setSortOrder('price_desc');
-            else setSortOrder('none');
-          }}
+          onClick={() => setSortOrder(prev => prev === 'none' ? 'price_asc' : prev === 'price_asc' ? 'price_desc' : 'none')}
+          className="secondary p-2 rounded-full flex items-center justify-center border border-[var(--border-color)] shrink-0"
         >
-          <ArrowUpDown size={18} />
+          <ArrowUpDown size={18} className={sortOrder !== 'none' ? 'text-[var(--link-color)]' : 'text-hint'} />
           {sortOrder === 'price_asc' && <span className="ml-1 text-xs font-bold">↑</span>}
           {sortOrder === 'price_desc' && <span className="ml-1 text-xs font-bold">↓</span>}
         </button>
@@ -180,93 +268,28 @@ export default function Landing({ initData }: { initData: string }) {
           </div>
         ) : (
           sortedProducts.map(p => (
-            <div key={p.id} className="card">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold m-0">{p.name}</h3>
-                <span className="font-bold text-lg text-[var(--link-color)]">{formatNumber(p.base_price)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
-              </div>
-              
-              {p.image_url && (
-                <div className="w-full h-48 rounded-lg overflow-hidden mb-4 border border-[var(--border-color)]">
-                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-                </div>
-              )}
-
-              {p.description && <p className="text-hint text-sm mb-6 leading-relaxed">{p.description}</p>}
-              
-              <div className="flex justify-between items-center mt-4 pt-4" style={{ borderTop: '1px solid var(--border-color)' }}>
-                <div className="flex items-center gap-2 text-hint text-sm">
-                  <Calendar size={16} />
-                  <span>{p.duration_days > 0 ? `${formatNumber(p.duration_days)} ${t('lbl_days', 'days')}` : t('lbl_lifetime', 'Lifetime') as string}</span>
-                </div>
-                
-                {p.stock === 0 ? (
-                  <span className="text-danger font-bold text-sm px-4 py-2" style={{ background: 'rgba(255,59,48,0.1)', borderRadius: 'var(--radius-full)' }}>
-                    {t('lbl_out_of_stock', 'Out of Stock')}
-                  </span>
-                ) : (
-                  (() => {
-                    const productBasketItems = basketItems.filter(i => i.product_id === p.id);
-                    const totalQuantity = productBasketItems.reduce((sum, i) => sum + i.quantity, 0);
-
-                    if (totalQuantity > 0) {
-                      return (
-                        <div className="flex items-center gap-3 bg-[var(--bg-color)] rounded-full p-1 border border-[var(--border-color)]">
-                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--danger-color)] hover:text-white" onClick={() => {
-                            if (productBasketItems.length === 1) {
-                              handleDecrement(productBasketItems[0].basket_id);
-                            } else {
-                              // If multiple variants, just go to basket or decrement the last added
-                              handleDecrement(productBasketItems[productBasketItems.length - 1].basket_id);
-                            }
-                          }}>-</button>
-                          <span className="font-bold min-w-[20px] text-center">{formatNumber(totalQuantity)}</span>
-                          <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id)} disabled={p.stock !== -1 && totalQuantity >= p.stock} style={{ opacity: (p.stock !== -1 && totalQuantity >= p.stock) ? 0.5 : 1 }}>+</button>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <button onClick={() => addToBasket(p.id)} style={{ borderRadius: 'var(--radius-full)' }}>
-                          <Plus size={18} /> {t('btn_add_to_basket', 'Add to Basket')}
-                        </button>
-                      );
-                    }
-                  })()
-                )}
-              </div>
-            </div>
+            <ProductCard 
+              key={p.id}
+              p={p} 
+              variants={variants} 
+              basketItems={basketItems} 
+              addToBasket={addToBasket} 
+              handleDecrement={handleDecrement} 
+              t={t} 
+              setFullScreenImg={setFullScreenImg}
+            />
           ))
         )}
       </div>
 
-      {selectedProductForVariant && (
-        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div className="card w-full max-w-sm flex flex-col" style={{ maxHeight: "90vh", overflow: "hidden" }}>
-            <div className="flex justify-between items-center mb-4 shrink-0">
-              <h3 className="font-bold m-0">{selectedProductForVariant.name} - Select Variant</h3>
-              <button onClick={() => setSelectedProductForVariant(null)} className="secondary p-2 rounded-full border-none"><span style={{fontSize: '18px', lineHeight: 1}}>×</span></button>
-            </div>
-            <div className="flex-1 overflow-y-auto pr-1">
-              <div className="flex flex-col gap-3">
-                {variants.filter(v => v.product_id === selectedProductForVariant.id).map(v => (
-                  <div key={v.id} className="card bg-[var(--secondary-bg-color)] border border-[var(--border-color)] m-0 p-3 flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
-                      <strong className="font-bold">{v.name}</strong>
-                      <span className="font-bold text-[var(--link-color)]">{v.price_modifier > 0 ? '+' : ''}{formatNumber(v.price_modifier)} {selectedProductForVariant.currency}</span>
-                    </div>
-                    {v.details && <p className="text-xs text-hint m-0">{v.details}</p>}
-                    {v.image_url && (
-                      <div className="w-full h-24 rounded-lg overflow-hidden border border-[var(--border-color)]">
-                        <img src={v.image_url} alt={v.name} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <button className="mt-2 text-sm" onClick={() => addToBasket(selectedProductForVariant.id, v.id)}>
-                      {t('btn_add_to_basket', 'Add to Basket')}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* Full Screen Image Modal */}
+      {fullScreenImg && (
+        <div className="modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.85)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }} onClick={() => setFullScreenImg(null)}>
+          <div className="relative w-full max-w-2xl h-full flex items-center justify-center pointer-events-none">
+            <button className="absolute top-4 left-4 z-50 bg-[rgba(0,0,0,0.5)] text-white border-none py-2 px-4 rounded-full flex items-center gap-2 pointer-events-auto" onClick={() => setFullScreenImg(null)}>
+              <span style={{fontSize: '18px', lineHeight: 1}}>×</span> {t('btn_close', 'Close')}
+            </button>
+            <img src={fullScreenImg} alt="Full Screen" style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain' }} className="pointer-events-auto" onClick={(e) => e.stopPropagation()} />
           </div>
         </div>
       )}

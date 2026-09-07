@@ -602,3 +602,5 @@ body[dir="rtl"] h1, body[dir="rtl"] h2, body[dir="rtl"] h3, body[dir="rtl"] h4, 
 [data-theme='dark'] .chat-time.in {
   color: #7a8a9a;
 }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
