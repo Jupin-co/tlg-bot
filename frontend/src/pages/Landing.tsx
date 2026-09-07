@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { formatNumber } from '../i18n';
-import { ShoppingCart, Plus, Calendar, PackageOpen, Search, ArrowUpDown } from 'lucide-react';
+import { ShoppingCart, Plus, Calendar, PackageOpen, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function ProductCard({ 
   p, variants, basketItems, addToBasket, handleDecrement, t, setFullScreenImg 
@@ -56,17 +56,17 @@ function ProductCard({
             <>
               <button 
                 onClick={() => setCurrentImgIndex(i => (i === 0 ? pImages.length - 1 : i - 1))}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-[var(--bg-color)] shadow-md border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-[var(--secondary-bg-color)] transition-colors opacity-80 hover:opacity-100"
                 aria-label="Previous image"
               >
-                <span className="font-bold text-lg" style={{lineHeight: 1, marginTop: '-2px'}}>‹</span>
+                <ChevronLeft size={20} className="text-[var(--text-color)]" />
               </button>
               <button 
                 onClick={() => setCurrentImgIndex(i => (i === pImages.length - 1 ? 0 : i + 1))}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[var(--bg-color)] shadow-md border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-[var(--secondary-bg-color)] transition-colors opacity-80 hover:opacity-100"
                 aria-label="Next image"
               >
-                <span className="font-bold text-lg" style={{lineHeight: 1, marginTop: '-2px'}}>›</span>
+                <ChevronRight size={20} className="text-[var(--text-color)]" />
               </button>
             </>
           )}
@@ -75,8 +75,8 @@ function ProductCard({
 
       {pVariants.length > 0 && (
         <div className="flex flex-col gap-2 mb-4">
-          <span className="text-xs font-bold text-hint">{t('lbl_options', 'Options')}:</span>
-          <div className="flex flex-wrap gap-2">
+          <span className="text-sm font-bold">{t('lbl_options', 'Options')}:</span>
+          <div className="flex flex-col gap-2">
             <button 
               onClick={() => {
                 setSelectedVariantId(null);
@@ -86,25 +86,30 @@ function ProductCard({
                   setCurrentImgIndex(0);
                 }
               }}
-              className={`py-1 px-3 rounded-full text-xs font-bold border transition-colors ${selectedVariantId === null ? 'bg-[var(--link-color)] text-white border-[var(--link-color)]' : 'bg-transparent text-[var(--text-color)] border-[var(--border-color)]'}`}
+              className={`p-3 rounded-lg text-sm font-bold border transition-all flex justify-between items-center ${selectedVariantId === null ? 'bg-[var(--link-color)] border-[var(--link-color)] text-white shadow-md' : 'bg-[var(--secondary-bg-color)] text-[var(--text-color)] border-transparent hover:border-[var(--border-color)]'}`}
             >
-              {t('lbl_base_option', 'Standard')}
+              <span>{t('lbl_base_option', 'Standard')}</span>
+              <span className="opacity-90">{formatNumber(p.base_price)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
             </button>
-            {pVariants.map(v => (
-              <button 
-                key={v.id} 
-                onClick={() => {
-                  setSelectedVariantId(v.id);
-                  if (v.image_url) {
-                    const idx = pImages.indexOf(v.image_url);
-                    if (idx !== -1) setCurrentImgIndex(idx);
-                  }
-                }}
-                className={`py-1 px-3 rounded-full text-xs font-bold border transition-colors ${selectedVariantId === v.id ? 'bg-[var(--link-color)] text-white border-[var(--link-color)]' : 'bg-transparent text-[var(--text-color)] border-[var(--border-color)]'}`}
-              >
-                {v.name}
-              </button>
-            ))}
+            {pVariants.map(v => {
+              const variantPrice = p.base_price + v.price_modifier;
+              return (
+                <button 
+                  key={v.id} 
+                  onClick={() => {
+                    setSelectedVariantId(v.id);
+                    if (v.image_url) {
+                      const idx = pImages.indexOf(v.image_url);
+                      if (idx !== -1) setCurrentImgIndex(idx);
+                    }
+                  }}
+                  className={`p-3 rounded-lg text-sm font-bold border transition-all flex justify-between items-center ${selectedVariantId === v.id ? 'bg-[var(--link-color)] border-[var(--link-color)] text-white shadow-md' : 'bg-[var(--secondary-bg-color)] text-[var(--text-color)] border-transparent hover:border-[var(--border-color)]'}`}
+                >
+                  <span>{v.name}</span>
+                  <span className="opacity-90">{formatNumber(variantPrice)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
