@@ -10,14 +10,16 @@ function ProductCard({
   p: any, variants: any[], basketItems: any[], addToBasket: any, handleDecrement: any, t: any, setFullScreenImg: any 
 }) {
   const pVariants = variants.filter(v => v.product_id === p.id);
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(pVariants.length > 0 ? pVariants[0].id : null);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   
   const selectedVariant = selectedVariantId ? pVariants.find(v => v.id === selectedVariantId) : null;
   const currentPrice = selectedVariant ? p.base_price + selectedVariant.price_modifier : p.base_price;
   const currentDetails = selectedVariant?.details || p.description;
   const currentStock = selectedVariant ? selectedVariant.stock : p.stock;
 
-  const productBasketItems = basketItems.filter(i => i.product_id === p.id && (selectedVariantId ? i.variant_id === selectedVariantId : true));
+  const productBasketItems = basketItems.filter(i => 
+    i.product_id === p.id && (selectedVariantId ? i.variant_id === selectedVariantId : !i.variant_id)
+  );
   const totalQuantity = productBasketItems.reduce((sum, i) => sum + i.quantity, 0);
 
   const pImages: string[] = [];
@@ -26,39 +28,84 @@ function ProductCard({
     if (v.image_url && !pImages.includes(v.image_url)) pImages.push(v.image_url);
   });
   
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
   return (
     <div className="card">
       <div className="flex justify-between items-start mb-4 gap-2">
-        <h3 className="text-lg font-bold m-0 flex-1">{p.name}{selectedVariant ? ` - ${selectedVariant.name}` : ''}</h3>
+        <h3 className="text-lg font-bold m-0 flex-1">{p.name}</h3>
         <span className="font-bold text-lg text-[var(--link-color)] shrink-0">{formatNumber(currentPrice)} {t(p.currency.toLowerCase(), p.currency) as string}</span>
       </div>
       
       {pImages.length > 0 && (
-        <div className="w-full flex overflow-x-auto snap-x snap-mandatory gap-2 mb-4 no-scrollbar">
-          {pImages.map((img, i) => (
-            <div key={i} className="min-w-full shrink-0 h-48 snap-center border border-[var(--border-color)] overflow-hidden bg-[var(--secondary-bg-color)] rounded-lg relative">
-              <img src={img} alt={`${p.name} image ${i+1}`} className="w-full h-full object-cover cursor-pointer" onClick={() => setFullScreenImg(img)} />
-              {pImages.length > 1 && (
-                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full pointer-events-none">
-                  {i + 1} / {pImages.length}
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="w-full relative mb-4">
+          <div className="w-full h-48 border border-[var(--border-color)] overflow-hidden bg-[var(--secondary-bg-color)] rounded-lg relative">
+            <img 
+              src={pImages[currentImgIndex]} 
+              alt={`${p.name} image`} 
+              className="w-full h-full object-cover cursor-pointer" 
+              onClick={() => setFullScreenImg(pImages[currentImgIndex])} 
+            />
+            {pImages.length > 1 && (
+              <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded-full pointer-events-none">
+                {currentImgIndex + 1} / {pImages.length}
+              </div>
+            )}
+          </div>
+          {pImages.length > 1 && (
+            <>
+              <button 
+                onClick={() => setCurrentImgIndex(i => (i === 0 ? pImages.length - 1 : i - 1))}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors"
+                aria-label="Previous image"
+              >
+                <span className="font-bold text-lg" style={{lineHeight: 1, marginTop: '-2px'}}>‹</span>
+              </button>
+              <button 
+                onClick={() => setCurrentImgIndex(i => (i === pImages.length - 1 ? 0 : i + 1))}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors"
+                aria-label="Next image"
+              >
+                <span className="font-bold text-lg" style={{lineHeight: 1, marginTop: '-2px'}}>›</span>
+              </button>
+            </>
+          )}
         </div>
       )}
 
       {pVariants.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {pVariants.map(v => (
+        <div className="flex flex-col gap-2 mb-4">
+          <span className="text-xs font-bold text-hint">{t('lbl_options', 'Options')}:</span>
+          <div className="flex flex-wrap gap-2">
             <button 
-              key={v.id} 
-              onClick={() => setSelectedVariantId(v.id)}
-              className={`py-1 px-3 rounded-full text-xs font-bold border transition-colors ${selectedVariantId === v.id ? 'bg-[var(--link-color)] text-white border-[var(--link-color)]' : 'bg-transparent text-[var(--text-color)] border-[var(--border-color)]'}`}
+              onClick={() => {
+                setSelectedVariantId(null);
+                if (p.image_url) {
+                  setCurrentImgIndex(pImages.indexOf(p.image_url) !== -1 ? pImages.indexOf(p.image_url) : 0);
+                } else {
+                  setCurrentImgIndex(0);
+                }
+              }}
+              className={`py-1 px-3 rounded-full text-xs font-bold border transition-colors ${selectedVariantId === null ? 'bg-[var(--link-color)] text-white border-[var(--link-color)]' : 'bg-transparent text-[var(--text-color)] border-[var(--border-color)]'}`}
             >
-              {v.name}
+              {t('lbl_base_option', 'Standard')}
             </button>
-          ))}
+            {pVariants.map(v => (
+              <button 
+                key={v.id} 
+                onClick={() => {
+                  setSelectedVariantId(v.id);
+                  if (v.image_url) {
+                    const idx = pImages.indexOf(v.image_url);
+                    if (idx !== -1) setCurrentImgIndex(idx);
+                  }
+                }}
+                className={`py-1 px-3 rounded-full text-xs font-bold border transition-colors ${selectedVariantId === v.id ? 'bg-[var(--link-color)] text-white border-[var(--link-color)]' : 'bg-transparent text-[var(--text-color)] border-[var(--border-color)]'}`}
+              >
+                {v.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -81,7 +128,7 @@ function ProductCard({
                 handleDecrement(productBasketItems[productBasketItems.length - 1].basket_id);
               }}>-</button>
               <span className="font-bold min-w-[20px] text-center">{formatNumber(totalQuantity)}</span>
-              <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id, selectedVariantId)} disabled={currentStock !== -1 && totalQuantity >= currentStock} style={{ opacity: (currentStock !== -1 && totalQuantity >= currentStock) ? 0.5 : 1 }}>+</button>
+              <button className="secondary p-2 rounded-full border-none w-10 h-10 flex items-center justify-center text-lg hover:bg-[var(--success-color)] hover:text-white" onClick={() => addToBasket(p.id, selectedVariantId || undefined)} disabled={currentStock !== -1 && totalQuantity >= currentStock} style={{ opacity: (currentStock !== -1 && totalQuantity >= currentStock) ? 0.5 : 1 }}>+</button>
             </div>
           ) : (
             <button onClick={() => addToBasket(p.id, selectedVariantId || undefined)} style={{ borderRadius: 'var(--radius-full)' }}>
