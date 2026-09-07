@@ -65,6 +65,7 @@ export default function Admin({ initData, userProfile }: { initData: string, use
   const [manageCodesProductId, setManageCodesProductId] = useState<number | null>(null);
   const [productCodes, setProductCodes] = useState<any[]>([]);
   const [newCode, setNewCode] = useState('');
+  const [newCodeVariantId, setNewCodeVariantId] = useState<string>('');
 
   // Messages States
   const [languages, setLanguages] = useState<any[]>([]);
@@ -508,10 +509,11 @@ export default function Admin({ initData, userProfile }: { initData: string, use
     const res = await fetch(`/api/admin/products/${manageCodesProductId}/codes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-telegram-init-data': initData },
-      body: JSON.stringify({ code: newCode })
+      body: JSON.stringify({ code: newCode, variant_id: newCodeVariantId ? parseInt(newCodeVariantId) : null })
     });
     if (res.ok) {
       setNewCode('');
+      setNewCodeVariantId('');
       fetchCodes(manageCodesProductId);
       fetchCatalog(); // Refresh stock
       showToast("Code added", "success");
@@ -800,10 +802,22 @@ export default function Admin({ initData, userProfile }: { initData: string, use
               <h3 className="font-bold m-0">{t("title_manage_codes", "Manage Codes")}</h3>
               <button onClick={() => setManageCodesProductId(null)} className="secondary p-2 rounded-full border-none"><X size={16} /></button>
             </div>
-            
-            <div className="flex gap-2 my-3">
-              <input className="flex-1" placeholder="Enter code" value={newCode} onChange={e => setNewCode(e.target.value)} />
-              <button onClick={addCode}>{t("add", "Add")}</button>
+            <div className="flex flex-col gap-2 my-3 bg-[var(--secondary-bg-color)] p-3 rounded-lg border border-[var(--border-color)]">
+              <h4 className="font-bold text-sm m-0">Add New Code</h4>
+              <select 
+                value={newCodeVariantId} 
+                onChange={e => setNewCodeVariantId(e.target.value)}
+                className="w-full text-sm p-2 rounded border border-[var(--border-color)] bg-[var(--bg-color)]"
+              >
+                <option value="">Standard Product (No Variant)</option>
+                {variants.filter(v => v.product_id === manageCodesProductId).map(v => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
+              <div className="flex gap-2">
+                <input className="flex-1 text-sm p-2" placeholder="Enter code" value={newCode} onChange={e => setNewCode(e.target.value)} />
+                <button onClick={addCode}>{t("add", "Add")}</button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto mt-2">
@@ -818,6 +832,11 @@ export default function Admin({ initData, userProfile }: { initData: string, use
                           {c.is_sold ? t("lbl_sold", "Sold") : t("lbl_available", "Available")}
                         </span>
                       </div>
+                      {c.variant_id && (
+                        <div className="text-xs text-[var(--link-color)]">
+                          Variant: {c.variant_name || variants.find(v => v.id === c.variant_id)?.name || c.variant_id}
+                        </div>
+                      )}
                       {c.is_sold && c.buyer_name && (
                         <div className="text-xs text-hint flex gap-2 items-center">
                           <span>{t("lbl_bought_by", "Bought by:")} <strong>{c.buyer_name}</strong></span>
